@@ -260,7 +260,7 @@ public class TitanSpawner : ThunderScript
     }
 
 
-    public void PlayAudio(string audioName, AudioSource source)
+    public static void PlayAudio(string audioName, AudioSource source)
     {
         Catalog.LoadAssetAsync<AudioContainer>(audioName, ac =>
         {

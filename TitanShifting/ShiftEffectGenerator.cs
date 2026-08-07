@@ -15,22 +15,27 @@ namespace BladeAndTitan.TitanShifting
         public int lightingCount = 10;
         public float maxLightIntensity = 3f;
 
+        private const string AudioName = "TitanShiftAudioGeneric";
+
         void Start()
         {
-            StartCoroutine(Activate());
+            //StartCoroutine(Activate());
         }
 
 
         IEnumerator Activate()
         {
-
+            
+            
+            
             for (int i = 0; i < lightingCount; i++)
             {
                 SpawnRandomLighting();
             }
-
+            
             var light = new GameObject("TitanLightingLight");
             light.transform.position = transform.position;
+            var audioSource = light.AddComponent<AudioSource>();
             var actualLight = light.AddComponent<Light>();
             actualLight.color = Color.yellow;
             actualLight.intensity = 0;
@@ -38,6 +43,8 @@ namespace BladeAndTitan.TitanShifting
             actualLight.type = LightType.Point;
             actualLight.shadows = LightShadows.None;
             actualLight.enabled = true;
+            
+            TitanSpawner.PlayAudio(AudioName, audioSource);
 
 
             float time = 0;
@@ -47,6 +54,7 @@ namespace BladeAndTitan.TitanShifting
                 time += Time.deltaTime;
                 yield return null;
             }
+            
             Destroy(light);
             foreach (var obj in createdObjects)
                 Destroy(obj);
@@ -68,9 +76,7 @@ namespace BladeAndTitan.TitanShifting
             component.StartPosition = transform.position;
             component.EndPosition = transform.position;
             lighting.GetComponent<Renderer>().material = lightingMaterial;
-
-            //component.StartPosition += Vector3.one * Random.Range(-0.1f, 0.1f);
-            //component.EndPosition += Vector3.one * Random.Range(-0.1f, 0.1f);
+            
             component.EndPosition += Vector3.up * Random.Range(10f, 30f);
 
             component.enabled = true;
