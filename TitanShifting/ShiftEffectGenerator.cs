@@ -31,6 +31,7 @@ namespace BladeAndTitan.TitanShifting
             }
             
             var light = new GameObject("TitanLightingLight");
+            light.transform.parent = transform;
             light.transform.position = transform.position;
             var audioSource = light.AddComponent<AudioSource>();
             var actualLight = light.AddComponent<Light>();
@@ -40,6 +41,7 @@ namespace BladeAndTitan.TitanShifting
             actualLight.type = LightType.Point;
             actualLight.shadows = LightShadows.None;
             actualLight.enabled = true;
+            light.transform.position += Vector3.up;
             
             TitanSpawner.PlayAudio(AudioName, audioSource);
 
@@ -65,20 +67,31 @@ namespace BladeAndTitan.TitanShifting
                 return;
 
             var lighting = new GameObject($"TitanLighting{createdObjects.Count}");
+            
             lighting.transform.position = transform.position;
             lighting.transform.rotation = transform.rotation;
+            lighting.transform.parent = transform;
+            
+            var startObject = new GameObject("StartObject");
+            var endObject = new GameObject("EndObject");
             
             createdObjects.Add(lighting);
+            createdObjects.Add(startObject);
+            createdObjects.Add(endObject);
+            
             var component = lighting.AddComponent<LightningBoltScript>();
-            component.StartPosition = transform.position;
-            component.EndPosition = transform.position;
+            startObject.transform.position = transform.position;
+            endObject.transform.position = transform.position;
             
             Catalog.LoadAssetAsync<Material>(MaterialName, material =>
             { 
                 lighting.GetComponent<Renderer>().material = material;
             }, MaterialName);
             
-            component.EndPosition += Vector3.up * Random.Range(10f, 30f);
+            endObject.transform.position += Vector3.up * Random.Range(10f, 30f);
+            
+            startObject.transform.parent = lighting.transform;
+            endObject.transform.parent = lighting.transform;
 
             component.enabled = true;
             component.Generations = 8;
