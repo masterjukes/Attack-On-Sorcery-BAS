@@ -1,5 +1,6 @@
 ﻿#define DEBUG // enable Titan Transofrm on fist event .
 
+using System.Collections;
 using RootMotion.FinalIK;
 using ThunderRoad;
 using UnityEngine;
@@ -82,7 +83,7 @@ public abstract class PlayerTitanBase : SpellCastCharge
         Player.currentCreature.handRight.caster.DisableSpellWheel(this);
 
         spellCaster.ragdollHand.otherHand.caster.LoadSpell(Catalog.GetData<SpellCastData>(id));
-        SummonTitan();
+        Player.currentCreature.StartCoroutine(SummonTitan());
         if (abilityShift)
             OnSpecialShift();
     }
@@ -94,8 +95,17 @@ public abstract class PlayerTitanBase : SpellCastCharge
     
 
 
-    protected void SummonTitan()
+    protected IEnumerator SummonTitan()
     {
+        var shiftEffects = new GameObject("ShiftEffects");
+        shiftEffects.transform.position = Player.local.transform.position;
+        shiftEffects.transform.rotation = Player.local.transform.rotation;
+        shiftEffects.transform.localScale = Vector3.one;
+        shiftEffects.transform.SetParent(Player.local.transform, true);
+        var effectGenerator = shiftEffects.AddComponent<ShiftEffectGenerator>();
+        
+        Player.currentCreature.StartCoroutine(effectGenerator.Activate());
+        yield return new WaitForSeconds(effectGenerator.duration);
         Catalog.InstantiateAsync(titanAddress, Player.local.transform.position,
             Player.local.transform.rotation, null,
             o =>

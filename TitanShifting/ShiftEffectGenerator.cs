@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using ThunderRoad;
 using UnityEngine;
 
 namespace BladeAndTitan.TitanShifting
@@ -9,21 +10,17 @@ namespace BladeAndTitan.TitanShifting
     {
         List<GameObject> createdObjects = new List<GameObject>();
 
-        public Material lightingMaterial;
+        
         
         public float duration = 5f;
         public int lightingCount = 10;
         public float maxLightIntensity = 3f;
 
         private const string AudioName = "TitanShiftAudioGeneric";
-
-        void Start()
-        {
-            //StartCoroutine(Activate());
-        }
-
-
-        IEnumerator Activate()
+        private const string MaterialName = "TitanShiftLightningMaterial";
+       
+        
+        public IEnumerator Activate()
         {
             
             
@@ -75,7 +72,11 @@ namespace BladeAndTitan.TitanShifting
             var component = lighting.AddComponent<LightningBoltScript>();
             component.StartPosition = transform.position;
             component.EndPosition = transform.position;
-            lighting.GetComponent<Renderer>().material = lightingMaterial;
+            
+            Catalog.LoadAssetAsync<Material>(MaterialName, material =>
+            { 
+                lighting.GetComponent<Renderer>().material = material;
+            }, MaterialName);
             
             component.EndPosition += Vector3.up * Random.Range(10f, 30f);
 
