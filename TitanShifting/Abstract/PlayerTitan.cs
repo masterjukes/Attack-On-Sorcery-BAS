@@ -341,9 +341,11 @@ public abstract class PlayerTitanBase : SpellCastCharge
         base.Unload();
         OnUnshift();
         Player.selfCollision = false;
-        Player.currentCreature.OnDamageEvent -= CurrentCreatureOnOnDamageEvent;
+        if(Player.currentCreature != null)
+            Player.currentCreature.OnDamageEvent -= CurrentCreatureOnOnDamageEvent;
         
         #if DEBUG
+        if(spellCaster != null)
             spellCaster.ragdollHand.playerHand.OnFistEvent -= PlayerHandOnOnFistEvent;
         #endif
 
