@@ -25,6 +25,7 @@ public abstract class PlayerTitanBase : SpellCastCharge
     public abstract float stepSpeed { get; }
     public abstract float maxHealth { get; }
     public abstract float jumpForce { get; }
+    public abstract float speedMultiplier { get; }
     
     float lastHeadRotation;
 
@@ -193,7 +194,9 @@ public abstract class PlayerTitanBase : SpellCastCharge
         Player.local?.creature?.currentLocomotion?.RefreshPhysicModifiers();
         Player.local?.creature?.currentLocomotion?.RefreshSpeedModifiers();
 
+        Player.local.creature.currentLocomotion.SetAllSpeedModifiers("creeg", speedMultiplier); 
         Player.local.creature.currentLocomotion.jumpGroundForce = jumpForce;
+        Player.local.creature.healthModifier.Add("Trog", maxHealth);
             
         Player.local?.handLeft?.link?.RefreshJointConfig();
         Player.local?.handLeft?.link?.RefreshJointModifiers();
@@ -225,7 +228,8 @@ public abstract class PlayerTitanBase : SpellCastCharge
         Player.local?.creature?.currentLocomotion?.RefreshSpeedModifiers();
         
         Player.local.creature.currentLocomotion.jumpGroundForce = 0.3f;
-        
+        Player.local.creature.healthModifier.Remove("Trog");
+        Player.local.creature.currentLocomotion.ClearSpeedModifiers();
         
         Player.local?.handLeft?.link?.RefreshJointConfig();
         Player.local?.handLeft?.link?.RefreshJointModifiers();
