@@ -46,7 +46,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
         public float rotationDamper = 18f;
         public float maxForce = 2500f;
         public float maxTorque = 500f;
-        public float maxLagDistance = 1.5f;
+        public float maxLagDistance = 100f;
 
         public Transform IkTarget => simulatedController != null
             ? simulatedController.transform
