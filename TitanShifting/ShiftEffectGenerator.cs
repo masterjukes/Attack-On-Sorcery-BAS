@@ -62,10 +62,6 @@ namespace BladeAndTitan.TitanShifting
 
         void SpawnRandomLighting()
         {
-
-            if (createdObjects.Count >= lightingCount)
-                return;
-
             var lighting = new GameObject($"TitanLighting{createdObjects.Count}");
             
             lighting.transform.position = transform.position;
