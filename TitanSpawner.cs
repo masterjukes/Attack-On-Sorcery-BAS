@@ -145,9 +145,9 @@ public class TitanSpawner : ThunderScript
         Vector3 top = pos + Vector3.up * (height - radius);
 
         Collider[] hits = new Collider[32];
-        Physics.OverlapCapsuleNonAlloc(bottom, top, radius, hits);
+        var count = Physics.OverlapCapsuleNonAlloc(bottom, top, radius, hits);
 
-        return hits.Length == 0;
+        return count == 0;
     }
 
     private IEnumerator SpawnTitan(Vector3 position, Quaternion rotation)

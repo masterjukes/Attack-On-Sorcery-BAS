@@ -9,6 +9,9 @@ public class ColossalTitan : PlayerTitanBase
     public override string titanAddress => "Bert_ColossalTitanRig";
     public override float footDistance => 8f;
     public override float stepSpeed => 0.8f;
+    
+    public override float maxHealth => 1000f;
+    public override float jumpForce => 2f;
 
 
     protected override void OnSpecialShift()
@@ -42,5 +45,6 @@ public class ColossalTitan : PlayerTitanBase
         handL.Init();
         
     }
+    
     
 }

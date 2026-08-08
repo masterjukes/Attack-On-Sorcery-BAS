@@ -23,6 +23,8 @@ public abstract class PlayerTitanBase : SpellCastCharge
     public abstract float footDistance { get; }
     
     public abstract float stepSpeed { get; }
+    public abstract float maxHealth { get; }
+    public abstract float jumpForce { get; }
     
     float lastHeadRotation;
 
@@ -159,10 +161,10 @@ public abstract class PlayerTitanBase : SpellCastCharge
                 SetHands(o);
 
 
+                isTransforming = false;
                 isTitan = true;
                 Player.currentCreature.HideItemsInHolders(true);
             }, "gd");
-        isTransforming = false;
     }
 
     protected abstract void SetHands(GameObject o);
@@ -190,6 +192,9 @@ public abstract class PlayerTitanBase : SpellCastCharge
         Player.local?.creature?.RefreshJointForceMultipliers();
         Player.local?.creature?.currentLocomotion?.RefreshPhysicModifiers();
         Player.local?.creature?.currentLocomotion?.RefreshSpeedModifiers();
+
+        Player.local.creature.currentLocomotion.jumpGroundForce = jumpForce;
+            
         Player.local?.handLeft?.link?.RefreshJointConfig();
         Player.local?.handLeft?.link?.RefreshJointModifiers();
         Player.local?.handLeft?.ragdollHand?.grabbedHandle?.RefreshJointDrive();
@@ -218,6 +223,10 @@ public abstract class PlayerTitanBase : SpellCastCharge
         Player.local?.creature?.RefreshJointForceMultipliers();
         Player.local?.creature?.currentLocomotion?.RefreshPhysicModifiers();
         Player.local?.creature?.currentLocomotion?.RefreshSpeedModifiers();
+        
+        Player.local.creature.currentLocomotion.jumpGroundForce = 0.3f;
+        
+        
         Player.local?.handLeft?.link?.RefreshJointConfig();
         Player.local?.handLeft?.link?.RefreshJointModifiers();
         Player.local?.handLeft?.ragdollHand?.grabbedHandle?.RefreshJointDrive();
@@ -278,6 +287,11 @@ public abstract class PlayerTitanBase : SpellCastCharge
         Object.Destroy(titan?.GetComponent<VRIK>());
         Object.Destroy(titan);
         titan = null;
+        
+        Object.Destroy(Player.local.head.transform.Find("j"));
+        Object.Destroy(Player.local.handRight.transform.Find("j2"));
+        Object.Destroy(Player.local.handLeft.transform.Find("j3"));
+        
         UnScale();
     }
 
@@ -285,7 +299,6 @@ public abstract class PlayerTitanBase : SpellCastCharge
     public sealed override void Unload()
     {
         base.Unload();
-        isTitan = false;
         OnUnshift();
         Player.selfCollision = false;
         Player.currentCreature.OnDamageEvent -= CurrentCreatureOnOnDamageEvent;
