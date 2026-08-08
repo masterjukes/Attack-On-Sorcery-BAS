@@ -88,11 +88,14 @@ namespace BladeAndTitan.TitanShifting
                 lighting.GetComponent<Renderer>().material = material;
             }, MaterialName);
             
-            endObject.transform.position += Vector3.up * Random.Range(10f, 30f);
+            endObject.transform.localPosition = Vector3.up * Random.Range(10f, 30f);
             
             startObject.transform.parent = lighting.transform;
             endObject.transform.parent = lighting.transform;
 
+            component.StartObject = startObject;
+            component.EndObject = endObject;
+            
             component.enabled = true;
             component.Generations = 8;
             component.Duration = 0.05f;

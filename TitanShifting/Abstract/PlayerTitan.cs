@@ -13,7 +13,8 @@ public abstract class PlayerTitanBase : SpellCastCharge
     [ModOption]
     [ModOptionFloatValues(0.1f, 1f, 0.05f)]
     public static float ScaleUniversal = 1.0f;
-    static bool isTitan;
+    public static bool isTitan;
+    private static bool isTransforming;
     static float lastHeight;
     
     protected static GameObject titan;
@@ -45,12 +46,14 @@ public abstract class PlayerTitanBase : SpellCastCharge
             Debug.Log("Titan Shifting due to debug fist event");
             OnShift(false);
         }
+        
+        
 
     }
 
     private void CurrentCreatureOnOnDamageEvent(CollisionInstance collisionInstance, EventTime eventTime)
     {
-        if (isTitan)
+        if (isTitan || isTransforming)
             return;
 
 
@@ -75,10 +78,11 @@ public abstract class PlayerTitanBase : SpellCastCharge
 
     protected virtual void OnShift(bool abilityShift)
     {
-        if (isTitan)
+        if (isTitan || isTransforming)
             return;
         Debug.Log("Titan Shifting");
         isTitan = true;
+        isTransforming = true;
         Player.currentCreature.handLeft.caster.DisableSpellWheel(this);
         Player.currentCreature.handRight.caster.DisableSpellWheel(this);
 
@@ -128,7 +132,7 @@ public abstract class PlayerTitanBase : SpellCastCharge
                 thr.transform.position = Player.local.handRight.transform.position;
                 thr.transform.parent = Player.local.handRight.transform;
                 thr.transform.localPosition = new Vector3(0, 0, 0);
-                thr.transform.localRotation = Quaternion.Euler(0, 90, 90);
+                thr.transform.localRotation = Quaternion.Euler(0, 90, -90);
 
                 var thl = new GameObject("j3");
                 thl.transform.position = Player.local.handLeft.transform.position;
@@ -156,8 +160,9 @@ public abstract class PlayerTitanBase : SpellCastCharge
 
 
                 isTitan = true;
-                Player.currentCreature.HideItemsInHolders(false);
+                Player.currentCreature.HideItemsInHolders(true);
             }, "gd");
+        isTransforming = false;
     }
 
     protected abstract void SetHands(GameObject o);
@@ -165,11 +170,11 @@ public abstract class PlayerTitanBase : SpellCastCharge
 
     protected void Scale(float scale)
     {
-        lastHeight = Player.local.creature.morphology.height;
+        if(lastHeight == 0)
+            lastHeight = Player.local.creature.morphology.height;
         Player.local.creature.morphology.height = scale * ScaleUniversal;
-        Player.local.transform.localScale = (Vector3.one * ScaleUniversal) *
-                                            (Player.local.creature.morphology.height /
-                                             Player.characterData.calibration.height);
+        Player.local.transform.localScale = Vector3.one * (ScaleUniversal * (Player.local.creature.morphology.height /
+                                                                             Player.characterData.calibration.height));
         if (Player.local?.footLeft != null)
         {
             Player.local.footLeft.playerMinHeight = 0.09f;
@@ -195,8 +200,10 @@ public abstract class PlayerTitanBase : SpellCastCharge
         Player.local?.handRight?.ragdollHand?.grabbedHandle?.RefreshJointDrive();
         Player.local?.handRight?.ragdollHand?.grabbedHandle?.RefreshJointModifiers();
         Player.local?.handRight?.ragdollHand?.grabbedHandle?.RefreshAllJointDrives();
+        
         Player.local.locomotion.colliderRadius = 0.3f * Player.local.transform.localScale.x;
         Player.local.locomotion.groundDetectionDistance = 0.05f * Player.local.transform.localScale.x;
+        
         Player.currentCreature.ragdoll.SetColliders(false);
         Player.local.airHelper.minHeight = 1 * Player.local.transform.localScale.x;
     }
@@ -259,10 +266,15 @@ public abstract class PlayerTitanBase : SpellCastCharge
 
     protected virtual void OnUnshift()
     {
+        if (!isTitan || isTransforming)
+            return;
+        
         isTitan = false;
         Player.currentCreature.handLeft.caster.AllowSpellWheel(this);
         Player.currentCreature.handRight.caster.AllowSpellWheel(this);
         titan?.transform.SetParent(null);
+        Player.currentCreature.renderers.ForEach(r => r.renderer.enabled = true);
+        Player.currentCreature.HideItemsInHolders(false);
         Object.Destroy(titan?.GetComponent<VRIK>());
         Object.Destroy(titan);
         titan = null;

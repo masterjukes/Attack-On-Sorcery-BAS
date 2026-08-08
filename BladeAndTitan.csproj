@@ -103,6 +103,7 @@
         <Compile Include="TitanShifting\Abstract\PlayerTitan.cs" />
         <Compile Include="TitanShifting\Abstract\TitanHand.cs" />
         <Compile Include="TitanShifting\Abstract\TitanPosess.cs" />
+        <Compile Include="TitanShifting\PlayerLocomotionPatchTests.cs" />
         <Compile Include="TitanShifting\ShiftEffectGenerator.cs" />
         <Compile Include="TitanShifting\SpecialisedTitans\ColossalTitan.cs" />
         <Compile Include="TitanSpawner.cs" />
