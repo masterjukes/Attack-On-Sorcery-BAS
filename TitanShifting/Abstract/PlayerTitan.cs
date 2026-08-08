@@ -27,7 +27,11 @@ public abstract class PlayerTitanBase : SpellCastCharge
     public abstract float jumpForce { get; }
     public abstract float speedMultiplier { get; }
     
+    public abstract float handWeight { get; }
+    
     float lastHeadRotation;
+    
+    
 
     public sealed override void Load(SpellCaster spellCaster)
     {
@@ -143,9 +147,43 @@ public abstract class PlayerTitanBase : SpellCastCharge
                 thl.transform.localPosition = new Vector3(0, 0, 0);
                 thl.transform.localRotation = Quaternion.Euler(0, -90, 90);
 
+                
                 q.solver.spine.headTarget = th.transform;
-                q.solver.leftArm.target = thl.transform;
-                q.solver.rightArm.target = thr.transform;
+
+                SetHands(o);
+
+                TitanHand leftTitanHand = null;
+                TitanHand rightTitanHand = null;
+
+                foreach (var titanHand in o.GetComponentsInChildren<TitanHand>(true))
+                {
+                    if (titanHand.side == Side.Left)
+                        leftTitanHand = titanHand;
+                    else if (titanHand.side == Side.Right)
+                        rightTitanHand = titanHand;
+                }
+
+                if (leftTitanHand == null || rightTitanHand == null)
+                {
+                    Debug.LogError("Titan hand setup failed: left or right TitanHand was not found.");
+                }
+                else
+                {
+                    
+                    leftTitanHand.controllerMass = handWeight;
+                    rightTitanHand.controllerMass = handWeight;
+
+                    leftTitanHand.ConfigureControllerMass(thl.transform);
+                    rightTitanHand.ConfigureControllerMass(thr.transform);
+                    
+
+
+                    q.solver.leftArm.target = leftTitanHand.IkTarget;
+                    q.solver.rightArm.target = rightTitanHand.IkTarget;
+                }
+                
+                
+                
                 q.solver.locomotion.footDistance = footDistance;
                 q.solver.locomotion.stepHeight =
                     new AnimationCurve(new Keyframe(0, 0), new Keyframe(0.5f, height / 3), new Keyframe(1, 0));
@@ -158,9 +196,7 @@ public abstract class PlayerTitanBase : SpellCastCharge
 
                 Player.currentCreature.renderers.ForEach(r => r.renderer.enabled = false);
                 o.transform.SetParent(Player.local.transform, true);
-
-                SetHands(o);
-
+                
 
                 isTransforming = false;
                 isTitan = true;

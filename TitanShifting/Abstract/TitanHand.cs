@@ -5,7 +5,6 @@ using UnityEngine;
 
 namespace BladeAndTitan.TitanShifting.Abstract
 {
-    
     class GrabData
     {
         public Rigidbody target;
@@ -15,6 +14,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
         public Quaternion rotOffset;
         public ConfigurableJoint joint;
     }
+
     public class TitanHand : MonoBehaviour
     {
         public int maxAllowed = 5;
@@ -22,23 +22,42 @@ namespace BladeAndTitan.TitanShifting.Abstract
         bool lastGrabbed;
         public Side side;
 
-        
+
         List<GrabData> grabs = new();
-        
+
 
         public string thumbParentName;
         public string indexParentName;
         public string middleParentName;
         public string ringParentName;
         public string pinkyParentName;
-        
+
         Transform thumb;
         Transform index;
         Transform middle;
         Transform ring;
         Transform pinky;
-        
-        
+
+
+        public float controllerMass = 2.5f;
+        public float positionSpring = 900f;
+        public float positionDamper = 85f;
+        public float rotationSpring = 180f;
+        public float rotationDamper = 18f;
+        public float maxForce = 2500f;
+        public float maxTorque = 500f;
+        public float maxLagDistance = 1.5f;
+
+        public Transform IkTarget => simulatedController != null
+            ? simulatedController.transform
+            : controllerTarget;
+
+        private Transform controllerTarget;
+        private Rigidbody simulatedController;
+
+        private Vector3 previousTargetPosition;
+        private Quaternion previousTargetRotation;
+        private bool hasPreviousTargetPose;
 
 
         private void OnTriggerEnter(Collider other)
@@ -73,7 +92,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
         private void OnTriggerExit(Collider other)
         {
-            if (!other.isTrigger && 
+            if (!other.isTrigger &&
                 other.GetComponentInParent<Player>() == null)
             {
                 if (other.GetComponentInParent<Creature>() != null)
@@ -97,8 +116,8 @@ namespace BladeAndTitan.TitanShifting.Abstract
                 }
             }
         }
-        
-        
+
+
         public void Init()
         {
             thumb = transform.FindChildRecursive(thumbParentName);
@@ -106,26 +125,13 @@ namespace BladeAndTitan.TitanShifting.Abstract
             middle = transform.FindChildRecursive(middleParentName);
             ring = transform.FindChildRecursive(ringParentName);
             pinky = transform.FindChildRecursive(pinkyParentName);
-            
         }
-
 
 
         void Update()
         {
             CheckGrip();
             UpdateFingers();
-        }
-        
-        void FixedUpdate()
-        {
-            foreach (var g in grabs)
-            {
-                if (g.driver == null) continue;
-
-                g.driver.position = transform.TransformPoint(g.posOffset);
-                g.driver.rotation = transform.rotation * g.rotOffset;
-            }
         }
 
 
@@ -145,7 +151,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
             Quaternion SwapXY(Quaternion q)
             {
                 Vector3 e = q.eulerAngles;
-                return Quaternion.Euler(-e.y,e.x, e.z);
+                return Quaternion.Euler(-e.y, e.x, e.z);
             }
 
             // ===== PROXIMAL =====
@@ -173,9 +179,6 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
         void Grab()
         {
-
-
-
             foreach (var rb in collidersInHandTrigger)
             {
                 if (rb.GetComponentInParent<Creature>())
@@ -183,10 +186,6 @@ namespace BladeAndTitan.TitanShifting.Abstract
                     var creature = rb.GetComponentInParent<Creature>();
                     creature.ragdoll.SetState(Ragdoll.State.Destabilized);
                 }
-               
-                
-
-                
 
 
                 GameObject driver = new GameObject("GrabDriver");
@@ -196,10 +195,10 @@ namespace BladeAndTitan.TitanShifting.Abstract
                 Rigidbody driverRb = driver.AddComponent<Rigidbody>();
                 driverRb.isKinematic = true;
                 driverRb.useGravity = false;
-                
+
                 ConfigurableJoint joint = driver.AddComponent<ConfigurableJoint>();
                 joint.connectedBody = rb;
-                
+
                 GrabData data = new GrabData
                 {
                     target = rb,
@@ -210,12 +209,12 @@ namespace BladeAndTitan.TitanShifting.Abstract
                 };
 
                 grabs.Add(data);
-                
+
                 joint.autoConfigureConnectedAnchor = false;
 
                 joint.anchor = Vector3.zero;
                 joint.connectedAnchor = rb.transform.InverseTransformPoint(driver.transform.position);
-                
+
                 joint.xMotion = ConfigurableJointMotion.Limited;
                 joint.yMotion = ConfigurableJointMotion.Limited;
                 joint.zMotion = ConfigurableJointMotion.Limited;
@@ -236,9 +235,8 @@ namespace BladeAndTitan.TitanShifting.Abstract
                 joint.connectedMassScale = 20f;
 
                 joint.enableCollision = false;
-                
-                Player.local.locomotion.SetAllSpeedModifiers("ajfa", 10);
 
+                Player.local.locomotion.SetAllSpeedModifiers("ajfa", 10);
             }
         }
 
@@ -249,9 +247,8 @@ namespace BladeAndTitan.TitanShifting.Abstract
             {
                 Destroy(g.joint);
                 Destroy(g.driver.gameObject);
-                
             }
-            
+
             grabs.Clear();
         }
 
@@ -269,19 +266,156 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
             lastGrabbed = gripping;
         }
-        
+
         IEnumerator EnableCollision(GrabData[] clogs)
         {
             yield return new WaitForSeconds(0.2f);
-            
+
             foreach (var col in gameObject.GetComponentsInChildren<Collider>())
             {
                 col.enabled = true;
             }
-            
         }
 
-        
+
+        // Add these methods inside TitanHand.
+
+        public void ConfigureControllerMass(Transform target)
+        {
+            controllerTarget = target;
+
+            if (controllerTarget == null)
+            {
+                Debug.LogError($"TitanHand {name} was given a null controller target.");
+                return;
+            }
+
+            if (simulatedController != null)
+            {
+                Destroy(simulatedController.gameObject);
+            }
+
+            var proxy = new GameObject($"TitanHandMassProxy_{side}");
+
+            // Deliberately do not parent this to the VR hand or titan.
+            // It must remain a world-space Rigidbody for the simulated mass to work.
+            proxy.transform.position = controllerTarget.position;
+            proxy.transform.rotation = controllerTarget.rotation;
+
+            simulatedController = proxy.AddComponent<Rigidbody>();
+            simulatedController.mass = controllerMass;
+            simulatedController.useGravity = false;
+            simulatedController.drag = 0f;
+            simulatedController.angularDrag = 0f;
+            simulatedController.interpolation = RigidbodyInterpolation.Interpolate;
+            simulatedController.collisionDetectionMode = CollisionDetectionMode.ContinuousSpeculative;
+
+            previousTargetPosition = controllerTarget.position;
+            previousTargetRotation = controllerTarget.rotation;
+            hasPreviousTargetPose = true;
+        }
+
+        private void FixedUpdate()
+        {
+            UpdateSimulatedController();
+            UpdateGrabDrivers();
+        }
+
+        private void UpdateSimulatedController()
+        {
+            if (controllerTarget == null || simulatedController == null)
+                return;
+
+            float dt = Time.fixedDeltaTime;
+
+            Vector3 targetVelocity = Vector3.zero;
+            Vector3 targetAngularVelocity = Vector3.zero;
+
+            if (hasPreviousTargetPose)
+            {
+                targetVelocity = (controllerTarget.position - previousTargetPosition) / dt;
+
+                Quaternion rotationDelta =
+                    controllerTarget.rotation * Quaternion.Inverse(previousTargetRotation);
+
+                rotationDelta.ToAngleAxis(out float angle, out Vector3 axis);
+
+                if (angle > 180f)
+                    angle -= 360f;
+
+                if (Mathf.Abs(angle) > 0.001f && axis.sqrMagnitude > 0.001f)
+                {
+                    targetAngularVelocity =
+                        axis.normalized * (angle * Mathf.Deg2Rad / dt);
+                }
+            }
+
+            previousTargetPosition = controllerTarget.position;
+            previousTargetRotation = controllerTarget.rotation;
+            hasPreviousTargetPose = true;
+
+            Vector3 positionError =
+                controllerTarget.position - simulatedController.position;
+
+            Vector3 velocityError =
+                targetVelocity - simulatedController.velocity;
+
+            Vector3 force =
+                positionError * positionSpring +
+                velocityError * positionDamper;
+
+            simulatedController.AddForce(
+                Vector3.ClampMagnitude(force, maxForce),
+                ForceMode.Force);
+
+            Quaternion desiredRotation =
+                controllerTarget.rotation * Quaternion.Inverse(simulatedController.rotation);
+
+            desiredRotation.ToAngleAxis(out float rotationAngle, out Vector3 rotationAxis);
+
+            if (rotationAngle > 180f)
+                rotationAngle -= 360f;
+
+            if (Mathf.Abs(rotationAngle) > 0.001f && rotationAxis.sqrMagnitude > 0.001f)
+            {
+                Vector3 torque =
+                    rotationAxis.normalized * (rotationAngle * Mathf.Deg2Rad * rotationSpring) +
+                    (targetAngularVelocity - simulatedController.angularVelocity) * rotationDamper;
+
+                simulatedController.AddTorque(
+                    Vector3.ClampMagnitude(torque, maxTorque),
+                    ForceMode.Force);
+            }
+
+            // Avoid the proxy being left far behind after teleporting, loading, or respawning.
+            if (positionError.sqrMagnitude > maxLagDistance * maxLagDistance)
+            {
+                simulatedController.position = controllerTarget.position;
+                simulatedController.rotation = controllerTarget.rotation;
+                simulatedController.velocity = Vector3.zero;
+                simulatedController.angularVelocity = Vector3.zero;
+            }
+        }
+
+        private void UpdateGrabDrivers()
+        {
+            foreach (var g in grabs)
+            {
+                if (g.driver == null)
+                    continue;
+
+                g.driver.position = transform.TransformPoint(g.posOffset);
+                g.driver.rotation = transform.rotation * g.rotOffset;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (simulatedController != null)
+            {
+                Destroy(simulatedController.gameObject);
+            }
+        }
     }
 
 

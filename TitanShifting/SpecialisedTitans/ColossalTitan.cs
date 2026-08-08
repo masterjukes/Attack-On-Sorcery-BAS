@@ -11,8 +11,9 @@ public class ColossalTitan : PlayerTitanBase
     public override float stepSpeed => 0.8f;
     
     public override float maxHealth => 1000f;
-    public override float jumpForce => 2f;
+    public override float jumpForce => 0.2f;
     public override float speedMultiplier => 4f;
+    public override float handWeight => 10f;
 
 
     protected override void OnSpecialShift()
