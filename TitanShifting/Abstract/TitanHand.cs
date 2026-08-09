@@ -40,13 +40,13 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
 
         public float controllerMass = 2.5f;
-        public float positionSpring = 900f;
-        public float positionDamper = 85f;
+        public float positionSpring = 1100f;
+        public float positionDamper = 125f;
         public float rotationSpring = 180f;
         public float rotationDamper = 18f;
-        public float maxForce = 2500f;
-        public float maxTorque = 500f;
-        public float maxLagDistance = 100f;
+        public float maxForce = 4500f;
+        public float maxTorque = 700f;
+        public float maxLagDistance = 1.25f;
 
         public Transform IkTarget => simulatedController != null
             ? simulatedController.transform
@@ -58,6 +58,16 @@ namespace BladeAndTitan.TitanShifting.Abstract
         private Vector3 previousTargetPosition;
         private Quaternion previousTargetRotation;
         private bool hasPreviousTargetPose;
+        
+        
+        public float playerVelocityCompensation = 1f;
+
+        public float maxPlayerVelocityCorrection = 25f;
+        public float catchUpDistance = 0.35f;
+        public float catchUpSpringMultiplier = 2.5f;
+        public float catchUpDamperMultiplier = 1.8f;
+        
+        
 
 
         private void OnTriggerEnter(Collider other)
@@ -236,7 +246,6 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
                 joint.enableCollision = false;
 
-                Player.local.locomotion.SetAllSpeedModifiers("ajfa", 10);
             }
         }
 
@@ -326,14 +335,24 @@ namespace BladeAndTitan.TitanShifting.Abstract
             if (controllerTarget == null || simulatedController == null)
                 return;
 
+            float titanScale = Mathf.Max(1f, Player.local.transform.lossyScale.x);
+
+            float scaledCatchUpDistance = catchUpDistance * titanScale;
+            float scaledMaxLagDistance = maxLagDistance * titanScale;
+            float scaledMaxForce = maxForce * titanScale;
+            float scaledMaxPlayerVelocityCorrection =
+                maxPlayerVelocityCorrection * titanScale;
+            
             float dt = Time.fixedDeltaTime;
 
-            Vector3 targetVelocity = Vector3.zero;
-            Vector3 targetAngularVelocity = Vector3.zero;
+            // Hand/controller movement since the previous physics frame.
+            Vector3 controllerVelocity = Vector3.zero;
+            Vector3 controllerAngularVelocity = Vector3.zero;
 
             if (hasPreviousTargetPose)
             {
-                targetVelocity = (controllerTarget.position - previousTargetPosition) / dt;
+                controllerVelocity =
+                    (controllerTarget.position - previousTargetPosition) / dt;
 
                 Quaternion rotationDelta =
                     controllerTarget.rotation * Quaternion.Inverse(previousTargetRotation);
@@ -345,7 +364,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
                 if (Mathf.Abs(angle) > 0.001f && axis.sqrMagnitude > 0.001f)
                 {
-                    targetAngularVelocity =
+                    controllerAngularVelocity =
                         axis.normalized * (angle * Mathf.Deg2Rad / dt);
                 }
             }
@@ -354,18 +373,48 @@ namespace BladeAndTitan.TitanShifting.Abstract
             previousTargetRotation = controllerTarget.rotation;
             hasPreviousTargetPose = true;
 
+            // This mirrors PlayerLink's locomotion velocity correction:
+            // when the player runs, jumps, or falls, the titan hand inherits that motion
+            // instead of having to be pulled after the player by the spring.
+            Vector3 playerVelocity = Vector3.zero;
+
+            if (Player.local?.locomotion?.physicBody != null)
+            {
+                playerVelocity = Player.local.locomotion.physicBody.velocity;
+            }
+
+            playerVelocity = Vector3.ClampMagnitude(
+                playerVelocity,
+                scaledMaxPlayerVelocityCorrection);
+
+            Vector3 desiredVelocity =
+                controllerVelocity +
+                playerVelocity * playerVelocityCompensation;
+
             Vector3 positionError =
                 controllerTarget.position - simulatedController.position;
 
+            float errorDistance = positionError.magnitude;
+
+            // Stronger, more damped correction once the hand is noticeably behind.
+            float spring = positionSpring;
+            float damper = positionDamper;
+
+            if (errorDistance > scaledCatchUpDistance)
+            {
+                spring *= catchUpSpringMultiplier;
+                damper *= catchUpDamperMultiplier;
+            }
+
             Vector3 velocityError =
-                targetVelocity - simulatedController.velocity;
+                desiredVelocity - simulatedController.velocity;
 
             Vector3 force =
-                positionError * positionSpring +
-                velocityError * positionDamper;
+                positionError * spring +
+                velocityError * damper;
 
             simulatedController.AddForce(
-                Vector3.ClampMagnitude(force, maxForce),
+                Vector3.ClampMagnitude(force, scaledMaxForce),
                 ForceMode.Force);
 
             Quaternion desiredRotation =
@@ -379,20 +428,23 @@ namespace BladeAndTitan.TitanShifting.Abstract
             if (Mathf.Abs(rotationAngle) > 0.001f && rotationAxis.sqrMagnitude > 0.001f)
             {
                 Vector3 torque =
-                    rotationAxis.normalized * (rotationAngle * Mathf.Deg2Rad * rotationSpring) +
-                    (targetAngularVelocity - simulatedController.angularVelocity) * rotationDamper;
+                    rotationAxis.normalized *
+                    (rotationAngle * Mathf.Deg2Rad * rotationSpring) +
+                    (controllerAngularVelocity - simulatedController.angularVelocity) *
+                    rotationDamper;
 
                 simulatedController.AddTorque(
                     Vector3.ClampMagnitude(torque, maxTorque),
                     ForceMode.Force);
             }
 
-            // Avoid the proxy being left far behind after teleporting, loading, or respawning.
-            if (positionError.sqrMagnitude > maxLagDistance * maxLagDistance)
+            // Teleports, respawns, and extreme desyncs should not leave hands behind.
+            if (positionError.sqrMagnitude >
+                scaledMaxLagDistance * scaledMaxLagDistance)
             {
                 simulatedController.position = controllerTarget.position;
                 simulatedController.rotation = controllerTarget.rotation;
-                simulatedController.velocity = Vector3.zero;
+                simulatedController.velocity = playerVelocity;
                 simulatedController.angularVelocity = Vector3.zero;
             }
         }

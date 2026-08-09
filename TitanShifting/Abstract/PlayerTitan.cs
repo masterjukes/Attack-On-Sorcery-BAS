@@ -265,7 +265,9 @@ public abstract class PlayerTitanBase : SpellCastCharge
         
         Player.local.creature.currentLocomotion.jumpGroundForce = 0.3f;
         Player.local.creature.healthModifier.Remove("Trog");
+        Player.local.creature.currentLocomotion.RemoveSpeedModifier("creeg");
         Player.local.creature.currentLocomotion.ClearSpeedModifiers();
+        
         
         Player.local?.handLeft?.link?.RefreshJointConfig();
         Player.local?.handLeft?.link?.RefreshJointModifiers();
