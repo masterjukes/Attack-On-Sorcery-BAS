@@ -195,6 +195,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
                 {
                     var creature = rb.GetComponentInParent<Creature>();
                     creature.ragdoll.SetState(Ragdoll.State.Destabilized);
+                    IgnoreCollisions(creature.gameObject, gameObject);
                 }
 
 
@@ -245,19 +246,26 @@ namespace BladeAndTitan.TitanShifting.Abstract
                 joint.connectedMassScale = 20f;
 
                 joint.enableCollision = false;
+                
+                
 
             }
         }
 
         void UnGrab()
         {
-            StartCoroutine(EnableCollision(grabs.ToArray()));
             foreach (var g in grabs)
             {
                 Destroy(g.joint);
                 Destroy(g.driver.gameObject);
-            }
 
+                if (g.target.GetComponentInParent<Creature>())
+                {
+                    UnignoreCollisions(g.target.GetComponentInParent<Creature>().gameObject, gameObject);
+                }
+            }
+            
+            
             grabs.Clear();
         }
 
@@ -276,15 +284,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
             lastGrabbed = gripping;
         }
 
-        IEnumerator EnableCollision(GrabData[] clogs)
-        {
-            yield return new WaitForSeconds(0.2f);
 
-            foreach (var col in gameObject.GetComponentsInChildren<Collider>())
-            {
-                col.enabled = true;
-            }
-        }
 
 
         // Add these methods inside TitanHand.
@@ -460,6 +460,34 @@ namespace BladeAndTitan.TitanShifting.Abstract
                 g.driver.rotation = transform.rotation * g.rotOffset;
             }
         }
+        
+        void IgnoreCollisions(GameObject a, GameObject b)
+        {
+            Collider[] aColliders = a.GetComponentsInChildren<Collider>();
+            Collider[] bColliders = b.GetComponentsInChildren<Collider>();
+
+            foreach (Collider aCol in aColliders)
+            {
+                foreach (Collider bCol in bColliders)
+                {
+                    Physics.IgnoreCollision(aCol, bCol, true);
+                }
+            }
+        }
+        
+        void UnignoreCollisions(GameObject a, GameObject b)
+        {
+            Collider[] aColliders = a.GetComponentsInChildren<Collider>();
+            Collider[] bColliders = b.GetComponentsInChildren<Collider>();
+
+            foreach (Collider aCol in aColliders)
+            {
+                foreach (Collider bCol in bColliders)
+                {
+                    Physics.IgnoreCollision(aCol, bCol, false);
+                }
+            }
+        }  
 
         private void OnDestroy()
         {

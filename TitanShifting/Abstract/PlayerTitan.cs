@@ -319,22 +319,55 @@ public abstract class PlayerTitanBase : SpellCastCharge
     {
         if (!isTitan || isTransforming)
             return;
+       
+        Object.Destroy(Player.local.head.transform.Find("j"));
+        Object.Destroy(Player.local.handRight.transform.Find("j2"));
+        Object.Destroy(Player.local.handLeft.transform.Find("j3"));
+        UnScale();
         
-        isTitan = false;
+        if(Player.currentCreature == null)
+            return;
+        
         Player.currentCreature.handLeft.caster.AllowSpellWheel(this);
         Player.currentCreature.handRight.caster.AllowSpellWheel(this);
         titan?.transform.SetParent(null);
         Player.currentCreature.renderers.ForEach(r => r.renderer.enabled = true);
         Player.currentCreature.HideItemsInHolders(false);
         Object.Destroy(titan?.GetComponent<VRIK>());
+        
+
+        
+        
+
+        var unspawnLocation = titan.transform.FindChildRecursive("PlayerSpawnUnshift");
+        var handlockL = titan.transform.FindChildRecursive("PlayerHandLockL"); 
+        var handLockR = titan.transform.FindChildRecursive("PlayerHandLockR");
+        
+        Player.local.Teleport(unspawnLocation, false, false);
+        titan.transform.FindChildRecursive("head").transform.localRotation = Quaternion.Euler(0, 0, 100);
+        var jointL = handlockL.GetComponent<ConfigurableJoint>();
+        jointL.SetConnectedPhysicBody(Player.currentCreature.handLeft.physicBody);
+        var jointR = handLockR.GetComponent<ConfigurableJoint>();
+        jointR.SetConnectedPhysicBody(Player.currentCreature.handRight.physicBody);
+
+        Player.local.StartCoroutine(WaitForJointExit(jointL, jointR));
+    }
+
+
+    IEnumerator WaitForJointExit(ConfigurableJoint jointL, ConfigurableJoint jointR)
+    {
+
+        yield return new WaitUntil(() => { return (jointL == null && jointR == null); });
+
+        yield return new WaitForSeconds(7f);
+        isTitan = false;
         Object.Destroy(titan);
         titan = null;
-        
-        Object.Destroy(Player.local.head.transform.Find("j"));
-        Object.Destroy(Player.local.handRight.transform.Find("j2"));
-        Object.Destroy(Player.local.handLeft.transform.Find("j3"));
-        
-        UnScale();
+
+
+
+
+
     }
 
 
