@@ -38,6 +38,9 @@
         <Reference Include="0Harmony">
           <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\StreamingAssets\Mods\_BetterHarmony\0Harmony.dll</HintPath>
         </Reference>
+        <Reference Include="IngameDebugConsole.Runtime">
+          <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\Managed\IngameDebugConsole.Runtime.dll</HintPath>
+        </Reference>
         <Reference Include="MysticHands">
           <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\StreamingAssets\Mods\MysticHands\MysticHands.dll</HintPath>
         </Reference>
@@ -103,6 +106,7 @@
         <Compile Include="TitanShifting\Abstract\PlayerTitan.cs" />
         <Compile Include="TitanShifting\Abstract\TitanHand.cs" />
         <Compile Include="TitanShifting\Abstract\TitanPosess.cs" />
+        <Compile Include="TitanShifting\PlayerHandTitanLock.cs" />
         <Compile Include="TitanShifting\PlayerLocomotionPatchTests.cs" />
         <Compile Include="TitanShifting\ShiftEffectGenerator.cs" />
         <Compile Include="TitanShifting\SpecialisedTitans\ColossalTitan.cs" />

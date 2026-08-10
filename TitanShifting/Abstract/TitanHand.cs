@@ -461,10 +461,10 @@ namespace BladeAndTitan.TitanShifting.Abstract
             }
         }
         
-        void IgnoreCollisions(GameObject a, GameObject b)
+        public static void IgnoreCollisions(GameObject a, GameObject b)
         {
-            Collider[] aColliders = a.GetComponentsInChildren<Collider>();
-            Collider[] bColliders = b.GetComponentsInChildren<Collider>();
+            Collider[] aColliders = a.GetComponentsInChildren<Collider>(true);
+            Collider[] bColliders = b.GetComponentsInChildren<Collider>(true);
 
             foreach (Collider aCol in aColliders)
             {
@@ -475,10 +475,10 @@ namespace BladeAndTitan.TitanShifting.Abstract
             }
         }
         
-        void UnignoreCollisions(GameObject a, GameObject b)
+        public static void UnignoreCollisions(GameObject a, GameObject b)
         {
-            Collider[] aColliders = a.GetComponentsInChildren<Collider>();
-            Collider[] bColliders = b.GetComponentsInChildren<Collider>();
+            Collider[] aColliders = a.GetComponentsInChildren<Collider>(true);
+            Collider[] bColliders = b.GetComponentsInChildren<Collider>(true);
 
             foreach (Collider aCol in aColliders)
             {
