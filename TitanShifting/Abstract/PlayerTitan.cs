@@ -20,6 +20,7 @@ public abstract class PlayerTitanBase : SpellCastCharge
     static float lastHeight;
     TitanHand leftTitanHand;
     TitanHand rightTitanHand;
+    TitanVelocityRemover velocityRemover;
     
     protected static GameObject titan;
 
@@ -333,71 +334,54 @@ public abstract class PlayerTitanBase : SpellCastCharge
     }
 
     
-    [ConsoleMethod("TitanUnshift", "Unshifts the player back to the original form")]
+
     protected virtual void OnUnshift()
     {
         if (!isTitan || isTransforming)
             return;
-       
-        
-        
+
+        isTransforming = true;
+
+        var vrik = titan.GetComponent<VRIK>();
+        if (vrik != null)
+            vrik.enabled = false;
+
+        Vector3 titanPosition = titan.transform.position;
+        Quaternion titanRotation = titan.transform.rotation;
+        Vector3 titanScale = titan.transform.lossyScale;
+
+        // IMPORTANT:
+        // Detach before changing the player's scale.
+        titan.transform.SetParent(null, true);
+
+        // Explicitly restore the exact world pose.
+        titan.transform.position = titanPosition;
+        titan.transform.rotation = titanRotation;
+        titan.transform.localScale = titanScale;
+
+        // Now changing the player's scale cannot affect the Titan.
+        UnScale();
+
         Object.Destroy(Player.local.head.transform.Find("j")?.gameObject);
         Object.Destroy(Player.local.handRight.transform.Find("j2")?.gameObject);
         Object.Destroy(Player.local.handLeft.transform.Find("j3")?.gameObject);
 
         Object.Destroy(leftTitanHand);
         Object.Destroy(rightTitanHand);
-        
-        
-        var oldLossy = titan.transform.lossyScale;
-        
-        UnScale();
-        
-        if(Player.currentCreature == null)
-            return;
-        
+
         Player.currentCreature.handLeft.caster.AllowSpellWheel(this);
         Player.currentCreature.handRight.caster.AllowSpellWheel(this);
-        titan?.transform.SetParent(null, true);
-
-        titan.transform.localScale = oldLossy;
-        Player.currentCreature.renderers.ForEach(r => r.renderer.enabled = true);
-        Player.currentCreature.HideItemsInHolders(false);
-        Object.Destroy(titan?.GetComponent<VRIK>());
-        
-        foreach (Rigidbody r in titan.GetComponentsInChildren<Rigidbody>(true))
-        {
-            r.isKinematic = true;
-            r.velocity = Vector3.zero;
-            r.angularVelocity = Vector3.zero; 
-            r.constraints = RigidbodyConstraints.FreezeAll;
-        } 
-        
-        
-
-        
-        var unspawnLocation = titan.transform.FindChildRecursive("PlayerSpawnUnshift");
-        var handlockL = titan.transform.FindChildRecursive("PlayerHandLockL"); 
-        var handLockR = titan.transform.FindChildRecursive("PlayerHandLockR");
-
-        //Player.local.handLeft.ragdollHand.transform.position = handlockL.position;
-        //Player.local.handRight.ragdollHand.transform.position = handLockR.position;
-        
-        //Player.local.Teleport(unspawnLocation, false, true);
-
 
         Player.local.locomotion.allowMove = false;
         Player.local.locomotion.physicBody.useGravity = false;
         Player.local.locomotion.physicBody.velocity = Vector3.zero;
-        
-        //titan.transform.FindChildRecursive("head").transform.localRotation = Quaternion.Euler(0, 0, 100);
-        //var lockL = Player.local.handLeft.ragdollHand.GetOrAddComponent<OneWayHandLock>();
-        //var lockR = Player.local.handRight.ragdollHand.GetOrAddComponent<OneWayHandLock>();
-        //lockL.target = handlockL;
-        //lockR.target = handLockR;
 
-        Player.local.StartCoroutine(WaitForJointExit(/*lockL, lockR*/));
+        Player.local.StartCoroutine(WaitForJointExit());
     }
+
+    
+
+    
 
 
     IEnumerator WaitForJointExit(/*OneWayHandLock lockL, OneWayHandLock lockR*/)
@@ -413,6 +397,7 @@ public abstract class PlayerTitanBase : SpellCastCharge
             yield return new WaitForFixedUpdate();
             
             RagdollTitan();
+            Object.Destroy(velocityRemover);
             Player.currentCreature.ragdoll.SetColliders(true);
             var smoke = titan.transform.FindChildRecursive("TitanSmoke");
             var flames = titan.transform.FindChildRecursive("TitanFlames");
@@ -449,28 +434,83 @@ public abstract class PlayerTitanBase : SpellCastCharge
 
     void RagdollTitan()
     {
-        Debug.Log("RagdollTitan BEFORE");
+        Rigidbody[] bodies = titan.GetComponentsInChildren<Rigidbody>(true);
 
-        foreach (Rigidbody rb in titan.GetComponentsInChildren<Rigidbody>(true))
+        // VRIK must already be disabled before getting here.
+        Physics.SyncTransforms();
+        AlignRagdollJoints();
+
+        // Make sure every Rigidbody's physics pose matches its current bone pose.
+        foreach (Rigidbody rb in bodies)
         {
-            Debug.Log($"{rb.name} BEFORE: {rb.velocity}");
+            rb.position = rb.transform.position;
+            rb.rotation = rb.transform.rotation;
+
+            rb.velocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+
+            rb.constraints = RigidbodyConstraints.None;
         }
 
-        // DON'T enable physics
-        foreach (Rigidbody rb in titan.GetComponentsInChildren<Rigidbody>(true))
+        Physics.SyncTransforms();
+
+        foreach (Collider c in titan.GetComponentsInChildren<Collider>(true))
         {
-            rb.isKinematic = true;
-            rb.useGravity = false;
+            c.enabled = true;
+        }
+
+        foreach (CharacterJoint joint in titan.GetComponentsInChildren<CharacterJoint>(true))
+        {
+            if (joint.connectedBody == null)
+                continue;
+
+            Vector3 a =
+                joint.transform.TransformPoint(joint.anchor);
+
+            Vector3 b =
+                joint.connectedBody.transform.TransformPoint(joint.connectedAnchor);
+
+            Debug.Log(
+                $"{joint.name}: " +
+                $"anchor error = {(a - b).magnitude}"
+            );
+        }
+        
+        // Release the entire ragdoll.
+        foreach (Rigidbody rb in bodies)
+        {
+            rb.isKinematic = false;
+            rb.useGravity = true;
+        }
+
+        // Prevent any velocity inherited/generated during the handoff.
+        foreach (Rigidbody rb in bodies)
+        {
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
-
-        Debug.Log("RagdollTitan AFTER");
-
-        foreach (Rigidbody rb in titan.GetComponentsInChildren<Rigidbody>(true))
+    }
+    
+    void AlignRagdollJoints()
+    {
+        foreach (CharacterJoint joint in titan.GetComponentsInChildren<CharacterJoint>(true))
         {
-            Debug.Log($"{rb.name} AFTER: {rb.velocity}");
+            if (joint.connectedBody == null)
+                continue;
+
+            // The joint's anchor on this Rigidbody, in world space.
+            Vector3 worldAnchor =
+                joint.transform.TransformPoint(joint.anchor);
+
+            // Make the connected body's anchor point to exactly
+            // the same world-space position.
+            joint.autoConfigureConnectedAnchor = false;
+
+            joint.connectedAnchor =
+                joint.connectedBody.transform.InverseTransformPoint(worldAnchor);
         }
+
+        Physics.SyncTransforms();
     }
 
 
