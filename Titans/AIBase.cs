@@ -14,6 +14,8 @@ public abstract class AIBase : MonoBehaviour
         FakedMovement,
         SlowFakedMovement
     }
+    
+    
 
     public TitanGeneric titan;
     public AIState state;
@@ -27,19 +29,19 @@ public abstract class AIBase : MonoBehaviour
     protected float timeSinceLastTick;
 
     
-    void Start()
+    protected virtual void Start()
     {
         agent = GetComponent<NavMeshAgent>();
         anim = GetComponent<Animator>();
         titan = GetComponent<TitanGeneric>();
-        
+
         agent.enabled = true;
         agent.updatePosition = true;
         agent.updateRotation = true;
         agent.obstacleAvoidanceType = ObstacleAvoidanceType.MedQualityObstacleAvoidance;
         agent.avoidancePriority = 30;
     }
-    void Update()
+    public virtual void Update()
     {
         timeSinceLastTick += Time.deltaTime;
         if (frameCount == framesPerTick)

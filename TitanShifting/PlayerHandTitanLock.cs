@@ -11,7 +11,7 @@ public class OneWayHandLock : MonoBehaviour
     public float damping = 150f;
 
     public float maxDistance = 0.15f;
-    public float breakForce = 1000f;
+    public float breakForce = 10000000000f;
 
     public bool useBreakDistance = false;
     public bool useBreakForce = true;
@@ -58,6 +58,7 @@ public class OneWayHandLock : MonoBehaviour
         // Break if the required force becomes too large.
         if (useBreakForce && force.magnitude >= breakForce)
         {
+            Debug.Log($"Hand lock broke by force. {force.magnitude}");
             Break();
             return;
         }

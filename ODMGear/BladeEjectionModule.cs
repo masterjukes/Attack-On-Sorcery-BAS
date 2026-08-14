@@ -72,6 +72,7 @@ public class BladeEjectionBehaviour : MonoBehaviour
         }
             
     }
+    
     private void ItemOnOnHeldActionEvent(RagdollHand ragdollHand, Handle handle, Interactable.Action action)
     {
         if (action == Interactable.Action.AlternateUseStart)

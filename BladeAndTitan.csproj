@@ -81,6 +81,9 @@
         <Reference Include="UnityEngine.SpatialTracking">
           <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\Managed\UnityEngine.SpatialTracking.dll</HintPath>
         </Reference>
+        <Reference Include="UnityEngine.TerrainModule">
+          <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\Managed\UnityEngine.TerrainModule.dll</HintPath>
+        </Reference>
         <Reference Include="UnityEngine.UI">
           <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\Managed\UnityEngine.UI.dll</HintPath>
         </Reference>
@@ -98,7 +101,11 @@
         <Compile Include="DebugHelpers\ColliderDebugging.cs" />
         <Compile Include="DebugHelpers\Extensions.cs" />
         <Compile Include="LightningBolt.cs" />
+        <Compile Include="LineRendererController.cs" />
+        <Compile Include="Map\LongerGrassDistance.cs" />
+        <Compile Include="Map\ViewDistanceIncrease.cs" />
         <Compile Include="ODMGear\BladeEjectionModule.cs" />
+        <Compile Include="ODMGear\GrapplingHook.cs" />
         <Compile Include="ODMGear\OdmGearModule.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
         <Compile Include="RascalPhysicsColliderProperties.cs" />
@@ -106,11 +113,11 @@
         <Compile Include="TitanShifting\Abstract\PlayerTitan.cs" />
         <Compile Include="TitanShifting\Abstract\TitanHand.cs" />
         <Compile Include="TitanShifting\Abstract\TitanPosess.cs" />
-        <Compile Include="TitanShifting\Abstract\TitanVelocityRemover.cs" />
         <Compile Include="TitanShifting\PlayerHandTitanLock.cs" />
         <Compile Include="TitanShifting\PlayerLocomotionPatchTests.cs" />
         <Compile Include="TitanShifting\ShiftEffectGenerator.cs" />
         <Compile Include="TitanShifting\SpecialisedTitans\ColossalTitan.cs" />
+        <Compile Include="TitanShifting\SpecialisedTitans\TitanFootCollider.cs" />
         <Compile Include="TitanSpawner.cs" />
         <Compile Include="Titans\AIBase.cs" />
         <Compile Include="Titans\Generic\GenericTitanAI.cs" />
@@ -118,7 +125,6 @@
         <Compile Include="Titans\Generic\TitanEatTrigger.cs" />
         <Compile Include="Titans\Generic\TitanLimb.cs" />
         <Compile Include="Titans\Generic\TitanTriggerAgro.cs" />
-        <Compile Include="ViewDistanceIncrease.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

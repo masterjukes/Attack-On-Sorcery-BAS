@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using BladeAndTitan.Titans.Generic;
 using ThunderRoad;
 using UnityEngine;
 
@@ -67,6 +68,9 @@ namespace BladeAndTitan.TitanShifting.Abstract
         public float catchUpSpringMultiplier = 2.5f;
         public float catchUpDamperMultiplier = 1.8f;
         
+        private Vector3 currentControllerVelocity;
+        private Vector3 currentControllerAngularVelocity;
+        
         
 
 
@@ -77,8 +81,20 @@ namespace BladeAndTitan.TitanShifting.Abstract
             {
                 if (other.GetComponentInParent<Creature>() != null)
                 {
+                    if (ObjectAlreadyInHand(other, other.GetComponentInParent<Creature>()))
+                        return;
+                   
+                    var creature = other.GetComponentInParent<Creature>();
+                    
                     var torsoRb = other.GetComponentInParent<Creature>().ragdoll.GetPart(RagdollPart.Type.Torso)
                         .physicBody.rigidBody;
+                    
+                    if (currentControllerVelocity.magnitude > 30)
+                    {
+                        creature.ragdoll.SetState(Ragdoll.State.Destabilized);
+                        creature.AddForce(currentControllerVelocity, ForceMode.VelocityChange);
+                    }
+                    
                     if (!collidersInHandTrigger.Contains(torsoRb))
                         collidersInHandTrigger.Add(torsoRb);
                     return;
@@ -86,20 +102,45 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
                 if (other.GetComponentInParent<Item>())
                 {
+                    if (ObjectAlreadyInHand(other, other.GetComponentInParent<Item>()))
+                        return;
+                    
                     var itemRb = other.GetComponentInParent<Item>().physicBody.rigidBody;
                     if (!collidersInHandTrigger.Contains(itemRb))
                         collidersInHandTrigger.Add(itemRb);
                     return;
                 }
-
-                if (other.attachedRigidbody != null)
+                
+                if (other.GetComponentInParent<TitanGeneric>())
                 {
-                    if (!collidersInHandTrigger.Contains(other.attachedRigidbody))
-                        collidersInHandTrigger.Add(other.attachedRigidbody);
+                    if (ObjectAlreadyInHand(other, other.GetComponentInParent<TitanGeneric>()))
+                        return;
+                    
+                    var titan = other.GetComponentInParent<TitanGeneric>();
+                    var titanRb = titan.GetComponent<Rigidbody>();
+                    if (currentControllerVelocity.magnitude > 150)
+                    {
+                        titanRb.isKinematic = false;
+                        titanRb.useGravity = true;
+                        titanRb.AddForce(currentControllerVelocity, ForceMode.VelocityChange);
+                        titan.Kill();
+                    }
+                    if(!collidersInHandTrigger.Contains(titanRb))
+                        collidersInHandTrigger.Add(titanRb);
                 }
             }
         }
 
+        bool ObjectAlreadyInHand<T>(Collider collider, T type) where T : Component
+        {
+            foreach (var rb in collidersInHandTrigger)
+            {
+                if(rb.GetComponentInParent<T>() == type)
+                    return true;
+            }
+            return false;
+        }
+        
         private void OnTriggerExit(Collider other)
         {
             if (!other.isTrigger &&
@@ -123,6 +164,13 @@ namespace BladeAndTitan.TitanShifting.Abstract
                 if (other.attachedRigidbody != null)
                 {
                     collidersInHandTrigger.Remove(other.attachedRigidbody);
+                }
+                
+                if (other.GetComponentInParent<TitanGeneric>())
+                {
+                    var titan = other.GetComponentInParent<TitanGeneric>();
+                    var titanRb = titan.GetComponent<Rigidbody>();
+                    collidersInHandTrigger.Remove(titanRb);
                 }
             }
         }
@@ -198,6 +246,18 @@ namespace BladeAndTitan.TitanShifting.Abstract
                     IgnoreCollisions(creature.gameObject, gameObject);
                 }
 
+                if (rb.GetComponentInParent < TitanGeneric>())
+                {
+                    continue;
+                    
+                    var titan = rb.GetComponentInParent<TitanGeneric>();
+                    titan.Kill();
+                    titan.GetComponent<Rigidbody>().isKinematic = false;
+                    titan.GetComponent<Rigidbody>().useGravity = true;
+                    
+                    IgnoreCollisions(titan.gameObject, gameObject);
+                }
+
 
                 GameObject driver = new GameObject("GrabDriver");
                 driver.transform.position = rb.position;
@@ -256,6 +316,12 @@ namespace BladeAndTitan.TitanShifting.Abstract
         {
             foreach (var g in grabs)
             {
+                if(g == null)
+                    continue;
+                    
+                Rigidbody rb = g.target;
+                
+                
                 Destroy(g.joint);
                 Destroy(g.driver.gameObject);
 
@@ -438,6 +504,9 @@ namespace BladeAndTitan.TitanShifting.Abstract
                     ForceMode.Force);
             }
 
+            currentControllerVelocity = controllerVelocity;
+            currentControllerAngularVelocity = controllerAngularVelocity;
+            
             // Teleports, respawns, and extreme desyncs should not leave hands behind.
             if (positionError.sqrMagnitude >
                 scaledMaxLagDistance * scaledMaxLagDistance)
@@ -491,6 +560,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
         private void OnDestroy()
         {
+            UnGrab();
             if (simulatedController != null)
             {
                 Destroy(simulatedController.gameObject);

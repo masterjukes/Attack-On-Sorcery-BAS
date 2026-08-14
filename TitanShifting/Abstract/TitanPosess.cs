@@ -6,6 +6,18 @@ namespace BladeAndTitan.TitanShifting.Abstract
 {
     public class TitanPosess : ThunderScript
     {
+        public override void ScriptEnable()
+        {
+            base.ScriptEnable();
+            EventManager.onPossess += EventManagerOnonPossess;
+        }
+
+        private void EventManagerOnonPossess(Creature creature, EventTime eventTime)
+        {
+            PlayerTitanBase.isTitan = false;
+            PlayerTitanBase.isTransforming = false;
+        }
+
         public override void ScriptUpdate()
         {
             base.ScriptUpdate();

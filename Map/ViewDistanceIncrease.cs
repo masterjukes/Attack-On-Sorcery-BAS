@@ -1,14 +1,13 @@
 ﻿using System.Collections;
 using ThunderRoad;
 
-namespace BladeAndTitan;
+namespace BladeAndTitan.Map;
 
 public class ViewDistanceIncrease : LevelModule
 {
     public override IEnumerator OnPlayerSpawnCoroutine()
     { 
-        yield return Yielders.ForSeconds(0.5f);
         Player.local.head.cam.farClipPlane = 2700f;
-        yield return base.OnPlayerSpawnCoroutine();
+        return base.OnPlayerSpawnCoroutine();
     }
 }

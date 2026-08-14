@@ -2,6 +2,7 @@
 using ThunderRoad;
 using ThunderRoad.AI.Get;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace BladeAndTitan.Titans.Generic;
 
@@ -92,6 +93,7 @@ public class TitanGeneric : MonoBehaviour
         jaw.transform.SetParent(limnbParent.transform);
         jaw.GetOrAddComponent<TitanLimb>().SetupDefaultValues(500, new []{"DisableJawColliders"}, 30f, 6f, TitanLimb.LimbType.Jaw);
         
+        
     }
     
     
@@ -126,10 +128,37 @@ public class TitanGeneric : MonoBehaviour
         gameObject.AddComponent<GenericTitanAI>();
     }
 
+    public virtual void Kill()
+    {
+        Destroy(gameObject.GetComponent<GenericTitanAI>());
+        gameObject.transform.FindChildRecursiveTR("NapeWound").gameObject.SetActive(true);
+        gameObject.transform.FindChildRecursiveTR("StrikeNape").GetComponent<ParticleSystem>().Play();
+        GetComponent<Animator>().SetBool("Death", true);
+        GetComponent<NavMeshAgent>().enabled = false;
+        Object.Destroy(gameObject, 10f);
+    }
+
 
     public virtual void Damage(CollisionInstance collisionInstance)
     {
+        const float damageMultiplier = 10f;
+        var usedItem = collisionInstance.sourceCollider.GetComponentInParent<Item>();
+        var itemVelocity = usedItem.Velocity;
+        var damage  = damageMultiplier * itemVelocity.magnitude;
         
+        Debug.Log(damage);
+        
+        if (collisionInstance.targetCollider.name == "NapeCollider")
+        {
+            if(damage > 400f)
+                Kill();
+        }
+        else
+        {
+            var limb = FindLimbByCollider(collisionInstance.targetCollider.name);
+            if(limb != null)
+                limb.Damage(damage);
+        }
     }
     
 }

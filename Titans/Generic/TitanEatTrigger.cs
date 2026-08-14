@@ -17,7 +17,8 @@ public class TitanEatTrigger : MonoBehaviour
     {
         if (other.GetComponentInParent<Player>() != null && !titan.jawDisabled)
         {
-            Player.currentCreature.Kill();
+            if(!TitanShifting.Abstract.PlayerTitanBase.isTitan)
+                Player.currentCreature.Kill();
         }
     }
 }

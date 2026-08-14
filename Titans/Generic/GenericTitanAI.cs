@@ -23,7 +23,37 @@ public class GenericTitanAI : AIBase
     public int maxDestinationAttempts = 10;
     int titansChasingPlayer = 0;
 
+    private const string ForestCenter = "ForestCenter";
+    private const string CastleCenter = "CastleCenter";
+    private const string CountryCenter = "CountryCenter";
+    private const string CityCenter = "CityCenter";
 
+    protected override void Start()
+    {
+        base.Start();
+        var un = GameObject.Find(ForestCenter);
+        var de = GameObject.Find(CastleCenter);
+        var tr = GameObject.Find(CountryCenter);
+        var qa = GameObject.Find(CityCenter);
+        
+        agent.speed = TitanSpawner.DeviatedRandom(8, 0.4f);
+        
+        var choice = Random.Range(0, 4);
+        switch (choice)
+        {
+            case 0: roamAreaCenter = un.transform.position; break;
+            case 1: roamAreaCenter = de.transform.position; break;
+            case 2: roamAreaCenter = tr.transform.position; break;
+            case 3: roamAreaCenter = qa.transform.position; break;
+        }
+        
+        ChangeDestination();
+    }
+
+    public override void Update()
+    {
+        base.Update();
+    }
 
     protected override void AITick()
     {
@@ -50,7 +80,8 @@ public class GenericTitanAI : AIBase
 
     void RoamingUpdate()
     {
-        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+        if (!agent.hasPath ||
+            (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance))
         {
             ChangeDestination();
         }
