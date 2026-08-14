@@ -92,7 +92,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
                     if (currentControllerVelocity.magnitude > 30)
                     {
                         creature.ragdoll.SetState(Ragdoll.State.Destabilized);
-                        creature.AddForce(currentControllerVelocity, ForceMode.VelocityChange);
+                        creature.AddForce(currentControllerVelocity, ForceMode.Impulse);
                     }
                     
                     if (!collidersInHandTrigger.Contains(torsoRb))
@@ -118,7 +118,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
                     
                     var titan = other.GetComponentInParent<TitanGeneric>();
                     var titanRb = titan.GetComponent<Rigidbody>();
-                    if (currentControllerVelocity.magnitude > 150)
+                    if (currentControllerVelocity.magnitude > 20)
                     {
                         titanRb.isKinematic = false;
                         titanRb.useGravity = true;

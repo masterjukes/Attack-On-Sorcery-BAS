@@ -14,7 +14,7 @@ public class ColossalTitan : PlayerTitanBase
     public override float maxHealth => 1000f;
     public override float jumpForce => 0.2f;
     public override float speedMultiplier => 4f;
-    public override float handWeight => 10f;
+    public override float handWeight => 35f;
     
     public override string stepSoundId => "CollTitanStepAudio";
 
@@ -32,7 +32,7 @@ public class ColossalTitan : PlayerTitanBase
         Debug.Log("Explosion Happened");
         PlaySound("CollTitanShiftExplosionAudio", Player.currentCreature.transform.position);
         titan.transform.FindChildRecursive("TitanTransformSpecialFX").gameObject.GetComponent<ParticleSystem>().Play();
-        ApplyExplosionForce();
+        ApplyExplosionForce(200f, titan.transform.FindChildRecursiveTR("CreatureLocation").position, 500f);
 
         //GameManager.local.StartCoroutine(ControlLight());
         
@@ -62,10 +62,8 @@ public class ColossalTitan : PlayerTitanBase
         
     }
     
-    public void ApplyExplosionForce()
+    public void ApplyExplosionForce(float radius, Vector3 explosionPosition, float force)
     {
-        Vector3 explosionPosition = titan.transform.position;
-        float radius = 200f;
         Collider[] colliders = Physics.OverlapSphere(explosionPosition, radius, ~0, QueryTriggerInteraction.Ignore);
 
         foreach (Collider collider in colliders)
@@ -78,16 +76,22 @@ public class ColossalTitan : PlayerTitanBase
                 if (rb.GetComponentInParent<Creature>() != null)
                 {
                     rb.GetComponentInParent<Creature>().ragdoll.SetState(Ragdoll.State.Destabilized);
-                    rb.GetComponentInParent<Creature>().AddExplosionForce(500f, explosionPosition, radius, 3, ForceMode.Impulse);
+                    rb.GetComponentInParent<Creature>().AddExplosionForce(force, explosionPosition, radius, 3, ForceMode.Impulse);
 
                 }
                 else
                 {
-                    rb.AddExplosionForce(500f, explosionPosition, radius, 3, ForceMode.Impulse);
+                    rb.AddExplosionForce(force, explosionPosition, radius, 3, ForceMode.Impulse);
                 }
             }
         }
-    } 
+    }
+
+    protected override void OnShift()
+    {
+        base.OnShift();
+        ApplyExplosionForce(4, Player.currentCreature.transform.position, 25f);
+    }
 
     protected override void OnTitanPossess()
     {

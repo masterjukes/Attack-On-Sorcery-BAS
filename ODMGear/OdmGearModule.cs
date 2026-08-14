@@ -135,11 +135,18 @@ namespace BladeAndTitan.ODMGear
 
         private void FixedUpdate()
         {
-            const float pullForce = 50f;
-            const float gasDirectionSpeed = 1.25f;
-            
-            if(item.mainHandler == null)
+            const float pullForce = 20f;
+            const float gasDirectionSpeed = 0.1f;
+
+            if (item.mainHandler == null)
+            {
+                if (grapple.Grappling)
+                    grapple.UnGrapple();
+                
+                Player.local.locomotion.physicBody.rigidBody.useGravity = true;
                 return;
+            }
+            
             
             
             if (grapple.Grappling)

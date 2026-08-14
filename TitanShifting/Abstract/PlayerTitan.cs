@@ -74,6 +74,10 @@ public abstract class PlayerTitanBase : SpellCastCharge
 
     private void PlayerHandOnOnFistEvent(PlayerHand hand, bool gripping)
     {
+        #if DEBUG
+        return;
+        #endif
+        
         if (gripping && !isTitan)
         {
             Debug.Log("Titan Shifting due to debug fist event");
@@ -497,11 +501,13 @@ public abstract class PlayerTitanBase : SpellCastCharge
             
             item.GetOrAddComponent<LineRendererController>().target = neck;
             Player.local.handRight.ragdollHand.Grab(item.GetMainHandle(Side.Right), true);
-            Player.currentCreature.HideItemsInHolders(false); 
+             
         }); 
         
         Player.local.Teleport(unspawnLocation);
        */
+        
+        Player.currentCreature.HideItemsInHolders(false);
         
         Object.Destroy(Player.local.head.transform.Find("j")?.gameObject);
         Object.Destroy(Player.local.handRight.transform.Find("j2")?.gameObject);
@@ -738,10 +744,8 @@ public abstract class PlayerTitanBase : SpellCastCharge
             Player.currentCreature.OnDamageEvent -= CurrentCreatureOnOnDamageEvent;
             Player.currentCreature.OnKillEvent -= CurrentCreatureOnOnKillEvent;
         }
-        #if DEBUG
         if(spellCaster != null)
             spellCaster.ragdollHand.playerHand.OnFistEvent -= PlayerHandOnOnFistEvent;
-        #endif
 
     }
 }
