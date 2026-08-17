@@ -1,3 +1,5 @@
+The code is total dog but it works somehow.
+
 Mod for VR game Blade and sorcery based on anime attack on titan. 
 planned features: 
 Titan transforming with unique abilities.
