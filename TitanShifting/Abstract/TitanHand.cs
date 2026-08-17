@@ -70,6 +70,11 @@ namespace BladeAndTitan.TitanShifting.Abstract
         
         private Vector3 currentControllerVelocity;
         private Vector3 currentControllerAngularVelocity;
+
+        public float requiredFlingVelocity = 20f;
+
+        private Vector3 handVelocity;
+        private Vector3 previousPosition;
         
         
 
@@ -89,10 +94,10 @@ namespace BladeAndTitan.TitanShifting.Abstract
                     var torsoRb = other.GetComponentInParent<Creature>().ragdoll.GetPart(RagdollPart.Type.Torso)
                         .physicBody.rigidBody;
                     
-                    if (currentControllerVelocity.magnitude > 30)
+                    if (handVelocity.magnitude > requiredFlingVelocity)
                     {
                         creature.ragdoll.SetState(Ragdoll.State.Destabilized);
-                        creature.AddForce(currentControllerVelocity, ForceMode.Impulse);
+                        creature.AddForce(handVelocity * controllerMass, ForceMode.Impulse);
                     }
                     
                     if (!collidersInHandTrigger.Contains(torsoRb))
@@ -118,11 +123,11 @@ namespace BladeAndTitan.TitanShifting.Abstract
                     
                     var titan = other.GetComponentInParent<TitanGeneric>();
                     var titanRb = titan.GetComponent<Rigidbody>();
-                    if (currentControllerVelocity.magnitude > 20)
+                    if (handVelocity.magnitude > requiredFlingVelocity)
                     {
                         titanRb.isKinematic = false;
                         titanRb.useGravity = true;
-                        titanRb.AddForce(currentControllerVelocity, ForceMode.VelocityChange);
+                        titanRb.AddForce(handVelocity * controllerMass, ForceMode.Impulse);
                         titan.Kill();
                     }
                     if(!collidersInHandTrigger.Contains(titanRb))
@@ -135,6 +140,9 @@ namespace BladeAndTitan.TitanShifting.Abstract
         {
             foreach (var rb in collidersInHandTrigger)
             {
+                if(rb == null)
+                    continue;
+                
                 if(rb.GetComponentInParent<T>() == type)
                     return true;
             }
@@ -143,6 +151,8 @@ namespace BladeAndTitan.TitanShifting.Abstract
         
         private void OnTriggerExit(Collider other)
         {
+            
+            
             if (!other.isTrigger &&
                 other.GetComponentInParent<Player>() == null)
             {
@@ -179,15 +189,29 @@ namespace BladeAndTitan.TitanShifting.Abstract
         public void Init()
         {
             thumb = transform.FindChildRecursive(thumbParentName);
+            if(thumb == null)
+                Debug.LogError($"TitanHand {name} was given a null thumb.");
             index = transform.FindChildRecursive(indexParentName);
+            if(index == null)
+                Debug.LogError($"TitanHand {name} was given a null index.");
             middle = transform.FindChildRecursive(middleParentName);
+            if(middle == null)
+                Debug.LogError($"TitanHand {name} was given a null middle.");
             ring = transform.FindChildRecursive(ringParentName);
+            if(ring == null)
+                Debug.LogError($"TitanHand {name} was given a null ring.");
             pinky = transform.FindChildRecursive(pinkyParentName);
+            if(pinky == null)
+                Debug.LogError($"TitanHand {name} was given a null pinky.");
         }
 
 
         void Update()
         {
+            Vector3 velocity = (transform.position - previousPosition) / Time.fixedDeltaTime;
+            previousPosition = transform.position;
+            handVelocity = velocity;
+            
             CheckGrip();
             UpdateFingers();
         }
@@ -239,6 +263,12 @@ namespace BladeAndTitan.TitanShifting.Abstract
         {
             foreach (var rb in collidersInHandTrigger)
             {
+
+                if (rb == null)
+                {
+                    continue;
+                }
+
                 if (rb.GetComponentInParent<Creature>())
                 {
                     var creature = rb.GetComponentInParent<Creature>();

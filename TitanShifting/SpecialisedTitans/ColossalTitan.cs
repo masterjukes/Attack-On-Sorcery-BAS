@@ -1,4 +1,5 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
 using BladeAndTitan.TitanShifting.Abstract;
 using ThunderRoad;
 using UnityEngine;
@@ -16,6 +17,11 @@ public class ColossalTitan : PlayerTitanBase
     public override float speedMultiplier => 4f;
     public override float handWeight => 35f;
     
+    public override float HeadTargetForwardOffset => -0.1f;
+    
+    protected override string VRIKLeftFootName => "LeftFoot";
+    protected override string VRIKRightFootName => "RightFoot";
+    
     public override string stepSoundId => "CollTitanStepAudio";
 
     static ParticleSystem smokeEffect;
@@ -29,7 +35,6 @@ public class ColossalTitan : PlayerTitanBase
 
     protected void CTExplosion()
     {
-        Debug.Log("Explosion Happened");
         PlaySound("CollTitanShiftExplosionAudio", Player.currentCreature.transform.position);
         titan.transform.FindChildRecursive("TitanTransformSpecialFX").gameObject.GetComponent<ParticleSystem>().Play();
         ApplyExplosionForce(200f, titan.transform.FindChildRecursiveTR("CreatureLocation").position, 500f);
@@ -84,8 +89,17 @@ public class ColossalTitan : PlayerTitanBase
                     rb.AddExplosionForce(force, explosionPosition, radius, 3, ForceMode.Impulse);
                 }
             }
+
+            if (collider.gameObject.name.Contains("House"))
+            {
+                collider.gameObject.AddComponent<HouseDestroyer>();
+            }
         }
     }
+
+    protected override Quaternion TitanHandLeftRotation => Quaternion.Euler(0, -90, 90);
+    protected override Quaternion TitanHandRightRotation => Quaternion.Euler(0, 90, -90);
+    protected override Quaternion TitanHeadRotation => Quaternion.Euler(0, -90, -90);
 
     protected override void OnShift()
     {
@@ -117,6 +131,7 @@ public class ColossalTitan : PlayerTitanBase
         {
             creature?.Kill();
         }
+        CheckAndDestroyHouses(leftFoot.GetComponent<TitanFootCollider>().houses);
     }
     
     protected override void OnRightFootstep()
@@ -126,6 +141,19 @@ public class ColossalTitan : PlayerTitanBase
         {
             creature.Kill();
         }
+        CheckAndDestroyHouses(rightFoot.GetComponent<TitanFootCollider>().houses);
+    }
+
+    void CheckAndDestroyHouses(List<GameObject> houses)
+    {
+        foreach (var house in houses)
+        {
+            if (house == null)
+                continue;
+            
+            house.GetOrAddComponent<HouseDestroyer>();
+        }
+        houses.Clear();
     }
 
     public override void Fire(bool active)
@@ -232,7 +260,11 @@ public class ColossalTitan : PlayerTitanBase
         handL.ringParentName = "ring.L";
         handL.pinkyParentName = "pinky.L";
         handL.Init();
-        
+
+
+        handL.maxAllowed = 5;
+        handR.maxAllowed = 5;
+
     }
     
     

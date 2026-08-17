@@ -37,6 +37,12 @@ public class BladeEjectionBehaviour : MonoBehaviour
     private void MainCollisionHandlerOnOnCollisionStartEvent(CollisionInstance collisionInstance)
     {
         lastDamageTypes.Push(collisionInstance.damageStruct.damageType);
+
+        if (collisionInstance.impactVelocity.magnitude > 5f)
+        {
+            ReleaseBlade();
+        }
+        
         if (collisionInstance.targetCollider.GetComponentInParent<TitanGeneric>() != null)
         {
             var titan = collisionInstance.targetCollider.GetComponentInParent<TitanGeneric>();

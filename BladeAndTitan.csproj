@@ -100,6 +100,22 @@
     <ItemGroup>
         <Compile Include="DebugHelpers\ColliderDebugging.cs" />
         <Compile Include="DebugHelpers\Extensions.cs" />
+        <Compile Include="DestructionPhysics\Collapser.cs" />
+        <Compile Include="DestructionPhysics\CollapserProcedural.cs" />
+        <Compile Include="DestructionPhysics\EzSlice\IntersectionResult.cs" />
+        <Compile Include="DestructionPhysics\EzSlice\Intersector.cs" />
+        <Compile Include="DestructionPhysics\EzSlice\Line.cs" />
+        <Compile Include="DestructionPhysics\EzSlice\Plane.cs" />
+        <Compile Include="DestructionPhysics\EzSlice\PlaneUsageExample.cs" />
+        <Compile Include="DestructionPhysics\EzSlice\RuntimeShatterExample.cs" />
+        <Compile Include="DestructionPhysics\EzSlice\ShatterExample.cs" />
+        <Compile Include="DestructionPhysics\EzSlice\SlicedHull.cs" />
+        <Compile Include="DestructionPhysics\EzSlice\Slicer.cs" />
+        <Compile Include="DestructionPhysics\EzSlice\SlicerExtensions.cs" />
+        <Compile Include="DestructionPhysics\EzSlice\TextureRegion.cs" />
+        <Compile Include="DestructionPhysics\EzSlice\Triangle.cs" />
+        <Compile Include="DestructionPhysics\EzSlice\Triangulator.cs" />
+        <Compile Include="HouseDestroyer.cs" />
         <Compile Include="LightningBolt.cs" />
         <Compile Include="LineRendererController.cs" />
         <Compile Include="Map\LongerGrassDistance.cs" />
@@ -116,8 +132,10 @@
         <Compile Include="TitanShifting\PlayerHandTitanLock.cs" />
         <Compile Include="TitanShifting\PlayerLocomotionPatchTests.cs" />
         <Compile Include="TitanShifting\ShiftEffectGenerator.cs" />
+        <Compile Include="TitanShifting\SpecialisedTitans\AttackTitan.cs" />
         <Compile Include="TitanShifting\SpecialisedTitans\ColossalTitan.cs" />
         <Compile Include="TitanShifting\SpecialisedTitans\TitanFootCollider.cs" />
+        <Compile Include="TitanShifting\SpecialisedTitans\WarhammerTitan.cs" />
         <Compile Include="TitanSpawner.cs" />
         <Compile Include="Titans\AIBase.cs" />
         <Compile Include="Titans\Generic\GenericTitanAI.cs" />

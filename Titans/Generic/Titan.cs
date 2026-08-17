@@ -133,6 +133,10 @@ public class TitanGeneric : MonoBehaviour
         Destroy(gameObject.GetComponent<GenericTitanAI>());
         gameObject.transform.FindChildRecursiveTR("NapeWound").gameObject.SetActive(true);
         gameObject.transform.FindChildRecursiveTR("StrikeNape").GetComponent<ParticleSystem>().Play();
+        foreach (var collider in GetComponentsInChildren<Collider>())
+        {
+            collider.enabled = false;
+        }
         GetComponent<Animator>().SetBool("Death", true);
         GetComponent<NavMeshAgent>().enabled = false;
         Object.Destroy(gameObject, 10f);
@@ -142,15 +146,13 @@ public class TitanGeneric : MonoBehaviour
     public virtual void Damage(CollisionInstance collisionInstance)
     {
         const float damageMultiplier = 10f;
-        var usedItem = collisionInstance.sourceCollider.GetComponentInParent<Item>();
-        var itemVelocity = usedItem.Velocity;
-        var damage  = damageMultiplier * itemVelocity.magnitude;
+        var damage  = damageMultiplier * collisionInstance.impactVelocity.magnitude;
         
         Debug.Log(damage);
         
         if (collisionInstance.targetCollider.name == "NapeCollider")
         {
-            if(damage > 400f)
+            if(damage > 50f)
                 Kill();
         }
         else

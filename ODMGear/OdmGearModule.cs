@@ -21,9 +21,6 @@ namespace BladeAndTitan.ODMGear
     
     public class OdmGearModule : ItemModule
     {
-        [ModOption( "Speed", "The speed of the ODM Gear.")]
-        public static OdmSpeed speed = OdmSpeed.Normal;
-        
         public override void OnItemLoaded(Item item)
         {
             base.OnItemLoaded(item);
@@ -44,22 +41,6 @@ namespace BladeAndTitan.ODMGear
         public bool gasButtonPressed;
 
         AudioSource audioSource;
-        public float odmSpeed
-        {
-            get
-            {
-                return OdmGearModule.speed switch
-                {
-                    OdmSpeed.ReallySlow => 0.25f,
-                    OdmSpeed.Slow => 0.5f,
-                    OdmSpeed.Normal => 1f,
-                    OdmSpeed.Fast => 2f,
-                    OdmSpeed.ReallyFast => 4f,
-                    _ => 1f,
-                };
-            }
-        }
-
         private void Start()
         {
             item = GetComponent<Item>();
