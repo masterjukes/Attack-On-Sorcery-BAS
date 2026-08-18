@@ -1,8 +1,11 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using BladeAndTitan.DestructionPhysics;
 using BladeAndTitan.TitanShifting.Abstract;
 using ThunderRoad;
 using UnityEngine;
+using UnityEngine.TerrainTools;
+
 
 namespace BladeAndTitan.TitanShifting.SpecialisedTitans;
 
@@ -38,6 +41,20 @@ public class ColossalTitan : PlayerTitanBase
         PlaySound("CollTitanShiftExplosionAudio", Player.currentCreature.transform.position);
         titan.transform.FindChildRecursive("TitanTransformSpecialFX").gameObject.GetComponent<ParticleSystem>().Play();
         ApplyExplosionForce(200f, titan.transform.FindChildRecursiveTR("CreatureLocation").position, 500f);
+        
+        var hits = Physics.RaycastAll(titan.transform.position, Vector3.down,100f, 1, QueryTriggerInteraction.Ignore);
+        foreach (var hit in hits)
+        {
+            if (hit.collider is TerrainCollider terrainCollider)
+            {
+                Debug.Log("Applying terrain paint!");
+
+                var terrain = terrainCollider.gameObject.GetComponent<Terrain>();
+                PaintTerrain(terrain, hit.point, 5, 200f, 100f);
+                PaintTerrain(terrain, hit.point, 6, 100f, 100f);
+                break;
+            }
+        }
 
         //GameManager.local.StartCoroutine(ControlLight());
         
@@ -45,6 +62,80 @@ public class ColossalTitan : PlayerTitanBase
         {
             creature.Inflict("Burning", "ckig", 320, 100f);
         }
+    }
+
+    public static void PaintTerrain(
+        Terrain terrain,
+        Vector3 worldPosition,
+        int layerIndex,
+        float radius,
+        float strength = 1f)
+    {
+        TerrainData data = terrain.terrainData;
+
+        Vector3 terrainPos = terrain.transform.position;
+
+        // Convert world position to normalized terrain coordinates
+        float normalizedX =
+            (worldPosition.x - terrainPos.x) / data.size.x;
+
+        float normalizedZ =
+            (worldPosition.z - terrainPos.z) / data.size.z;
+
+        int mapWidth = data.alphamapWidth;
+        int mapHeight = data.alphamapHeight;
+
+        int centerX = Mathf.RoundToInt(normalizedX * mapWidth);
+        int centerZ = Mathf.RoundToInt(normalizedZ * mapHeight);
+
+        int radiusPixels =
+            Mathf.RoundToInt(radius / data.size.x * mapWidth);
+
+        int startX = Mathf.Max(0, centerX - radiusPixels);
+        int startZ = Mathf.Max(0, centerZ - radiusPixels);
+        int endX = Mathf.Min(mapWidth - 1, centerX + radiusPixels);
+        int endZ = Mathf.Min(mapHeight - 1, centerZ + radiusPixels);
+
+        int width = endX - startX + 1;
+        int height = endZ - startZ + 1;
+
+        float[,,] alphamaps =
+            data.GetAlphamaps(startX, startZ, width, height);
+
+        int layerCount = data.alphamapLayers;
+
+        for (int z = 0; z < height; z++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float dx = x + startX - centerX;
+                float dz = z + startZ - centerZ;
+
+                float distance = Mathf.Sqrt(dx * dx + dz * dz);
+
+                if (distance > radiusPixels)
+                    continue;
+
+                float falloff =
+                    1f - Mathf.Clamp01(distance / radiusPixels);
+
+                float amount = falloff * strength;
+
+                // Increase target layer
+                alphamaps[z, x, layerIndex] += amount;
+
+                // Renormalize all layers so their total remains 1
+                float total = 0f;
+
+                for (int layer = 0; layer < layerCount; layer++)
+                    total += alphamaps[z, x, layer];
+
+                for (int layer = 0; layer < layerCount; layer++)
+                    alphamaps[z, x, layer] /= total;
+            }
+        }
+
+        data.SetAlphamaps(startX, startZ, alphamaps);
     }
 
     IEnumerator ControlLight()
@@ -77,7 +168,8 @@ public class ColossalTitan : PlayerTitanBase
             {
                 if(rb.GetComponentInParent<Player>() != null)
                     continue;
-
+                
+                
                 if (rb.GetComponentInParent<Creature>() != null)
                 {
                     rb.GetComponentInParent<Creature>().ragdoll.SetState(Ragdoll.State.Destabilized);
@@ -92,8 +184,14 @@ public class ColossalTitan : PlayerTitanBase
 
             if (collider.gameObject.name.Contains("House"))
             {
-                collider.gameObject.AddComponent<HouseDestroyer>();
+                collider.gameObject.GetOrAddComponent<HouseDestroyer>().Init(radius, explosionPosition, force);
             }
+            
+            if (collider.gameObject.GetComponent<SimplePhysicsObject>())
+            {
+                collider.gameObject.GetComponent<SimplePhysicsObject>().AddExplosionForce(force, explosionPosition, radius, 3, ForceMode.Impulse);
+            }
+            
         }
     }
 
@@ -131,7 +229,26 @@ public class ColossalTitan : PlayerTitanBase
         {
             creature?.Kill();
         }
-        CheckAndDestroyHouses(leftFoot.GetComponent<TitanFootCollider>().houses);
+        //CheckAndDestroyHouses(leftFoot.GetComponent<TitanFootCollider>().houses);
+        ApplyExplosionForce(15f, leftFoot.transform.position, 10f);
+        
+        var hits = Physics.RaycastAll(leftFoot.position, Vector3.down, 100f, 1, QueryTriggerInteraction.Ignore);
+        foreach (var hit in hits)
+        {
+            if (hit.collider is TerrainCollider terrainCollider)
+            {
+                Debug.Log("Stamping foot!");
+                
+                var terrain = terrainCollider.gameObject.GetComponent<Terrain>();
+                Debug.Log($"Terrain height: {terrain.SampleHeight(hit.point)}");
+                FootprintStamp.Stamp(terrain, hit.point, 0);
+                terrain.terrainData.SyncHeightmap();
+                Debug.Log($"Terrain height: {terrain.SampleHeight(hit.point)}");
+
+                break;
+            }
+        }
+
     }
     
     protected override void OnRightFootstep()
@@ -141,7 +258,25 @@ public class ColossalTitan : PlayerTitanBase
         {
             creature.Kill();
         }
-        CheckAndDestroyHouses(rightFoot.GetComponent<TitanFootCollider>().houses);
+        //CheckAndDestroyHouses(rightFoot.GetComponent<TitanFootCollider>().houses);
+        ApplyExplosionForce(15f, rightFoot.transform.position, 10f);
+        
+        var hits = Physics.RaycastAll(rightFoot.position, Vector3.down, 100f, 1, QueryTriggerInteraction.Ignore);
+        foreach (var hit in hits)
+        {
+            if (hit.collider is TerrainCollider terrainCollider)
+            {
+                Debug.Log("Stamping foot!");
+
+                var terrain = terrainCollider.gameObject.GetComponent<Terrain>();
+                Debug.Log($"Terrain height: {terrain.SampleHeight(hit.point)}");
+                FootprintStamp.Stamp(terrain, hit.point, 0);
+                terrain.terrainData.SyncHeightmap();
+                Debug.Log($"Terrain height: {terrain.SampleHeight(hit.point)}");
+                break;
+            }
+        }
+
     }
 
     void CheckAndDestroyHouses(List<GameObject> houses)

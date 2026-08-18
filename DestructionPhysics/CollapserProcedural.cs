@@ -1,6 +1,11 @@
-﻿using BladeAndTitan.DestructionPhysics.EzSlice;
+﻿using System;
+using System.Collections.Generic;
+using BladeAndTitan.DestructionPhysics.EzSlice;
+using ThunderRoad;
 using UnityEngine;
+using Object = UnityEngine.Object;
 using Plane = BladeAndTitan.DestructionPhysics.EzSlice.Plane;
+using Random = UnityEngine.Random;
 
 namespace BladeAndTitan.DestructionPhysics
 {
@@ -8,28 +13,213 @@ namespace BladeAndTitan.DestructionPhysics
     {
         [SerializeField] public GameObject meshNode;
         [SerializeField] public GameObject collapseVfxPrefab;
-        [SerializeField] public Material sliceMaterial;
+        [SerializeField] public static Material sliceMaterial;
         [SerializeField] public int minShards;
         [SerializeField] public int maxShards;
         [SerializeField] Vector3 slicerNormalBias;
 
-	bool hasCollapsed;
+        [ModOption]
+        [ModOptionIntValues(0, 1000, 5)]
+        public static int maxDebrisObjects = 100;
+        
+        [ModOption( "Mesh Slices Per House", "Number of mesh slices per house, the real value will be 2^ of this modoptions value")]
+        [ModOptionIntValues(0, 10, 1)]
+        public static int maxSlicesPerHouse = 5;
+        
+        
+        static List<GameObject> debrisObjects = new();
+        
+        struct SliceInfo
+        {
+            public GameObject sliceMesh;
+            public Vector3 positionOffset;
+            public Quaternion rotation;
+
+        }
+
+        private static Dictionary<string, SliceInfo[]> destructionCache = new();
+
+        private List<GameObject> sliceParts = new();
+	    bool hasCollapsed;
 
         void Start()
         {
             currentHp = startingHp;
         }
 
-        public override void Collapse()
+        public static void PrebakeMeshes()
         {
-            base.Collapse();
+            Catalog.LoadAssetAsync<Material>(HouseDestroyer.houseMaterialName, material =>
+            {
+                sliceMaterial = material;
+                var houseParents = GameObject.Find("New Shiganshina").transform.Find("Houses").GetComponentsInChildren<Transform>();
+                foreach (var gameObject in houseParents)
+                {
+                    var transform = gameObject.GetChild(0);
+                    var pooled = Instantiate(transform.gameObject);
+                    Debug.Log(pooled.name);
+                    var collapser = pooled.AddComponent < CollapserProcedural>();
+                    Destroy(pooled);
+                    collapser.Fragment(pooled, maxSlicesPerHouse);
+                    collapser.CacheSlice(collapser.sliceParts.ToArray(), pooled);
+                    foreach (var slices in collapser.sliceParts)
+                    {
+                        Destroy(slices);
+                    }
+                }
+            }, "HouseMaterial");
+
+        }
+
+        public override void Collapse(float radius, Vector3 explosionPosition, float force)
+        {
+            base.Collapse( radius, explosionPosition, force);
             if (hasCollapsed) return;
             
 	        hasCollapsed = true;
-            Fragment(meshNode, Random.Range(minShards, maxShards));
-            gameObject.SetActive(false);
-            Instantiate(collapseVfxPrefab, transform.position, Quaternion.identity);
+            
+
+            var distance = Vector3.Distance(transform.position, explosionPosition);
+            
+            if (distance < 30f && force > 100f)
+            {
+                GameObject.Destroy(gameObject);
+            }
+            
+
+            if (distance < 75f && force > 100f)
+            {
+                GetComponent<Renderer>().material.color = Color.black;
+                sliceMaterial.color = Color.black;
+            }
+
+            ClearDebrisObjectsOfNull();
+
+            if (debrisObjects.Count >= maxDebrisObjects)
+            {
+                for (int i = 0; i < debrisObjects.Count; i++)
+                {
+                    GameObject.Destroy(debrisObjects[0]);
+                }
+
+                debrisObjects.RemoveRange(0, (int) Mathf.Pow(2, maxSlicesPerHouse));
+                
+            }
+            
+            
+            
+            if (GetCachedSliceCount(meshNode) != (int) Mathf.Pow(2, maxSlicesPerHouse)  || !InstatiateCachedSlices(meshNode))
+            {
+                Fragment(meshNode, maxSlicesPerHouse);
+                CacheSlice(sliceParts.ToArray(), meshNode);
+            }
+
+            foreach (var slices in sliceParts)
+            {
+
+                debrisObjects.Add(slices);
+                var random = Random.Range(30, 120);  
+                Destroy(slices, random);
+                var col = slices.AddComponent<MeshCollider>();
+                col.sharedMesh = slices.GetComponent<MeshFilter>().sharedMesh;
+                col.convex = true;
+                Destroy(col, random-3);
+                
+                var rb = slices.GetOrAddComponent<Rigidbody>();
+                rb.mass = 0.2f;
+                rb.AddExplosionForce(force, explosionPosition, radius, 0f, ForceMode.Impulse);
+            }
+            
+            sliceParts.Clear();
+            Destroy(gameObject);
+            Instantiate(collapseVfxPrefab, transform.position, Quaternion.Euler(-90, 0, 0));
+            
         }
+
+        void ClearDebrisObjectsOfNull()
+        {
+            debrisObjects.RemoveAll(x => x == null);
+        }
+
+        public void CacheSlice(GameObject[] slicedMeshes, GameObject originalMesh)
+        {
+            List<SliceInfo> sliceInfoCache = new();
+            foreach (var sliceMesh in slicedMeshes)
+            {
+                sliceInfoCache.Add(new SliceInfo
+                {
+                    sliceMesh = Object.Instantiate(
+                        sliceMesh
+                    ),
+
+                    positionOffset =
+                        sliceMesh.transform.position -
+                        originalMesh.transform.position,
+
+                    rotation =
+                        Quaternion.Inverse(originalMesh.transform.rotation) *
+                        sliceMesh.transform.rotation
+                });
+                
+            }
+            
+            
+            string key = originalMesh.GetComponent<MeshFilter>().sharedMesh.name;
+
+
+            destructionCache[key] = sliceInfoCache.ToArray();
+        }
+
+        bool InstatiateCachedSlices(GameObject replacementObject)
+        {
+            
+            Mesh mesh = replacementObject.GetComponent<MeshFilter>().sharedMesh;
+            string key = mesh.name + " Instance";
+
+
+            
+            if (!destructionCache.TryGetValue(key, out SliceInfo[] sliceInfo))
+            {
+
+                return false;
+            }
+
+
+            
+            foreach (var info in sliceInfo)
+            {
+                if (info.sliceMesh == null)
+                    return false;
+                
+                
+                GameObject newObject = Instantiate(info.sliceMesh);
+
+                newObject.transform.position =
+                    replacementObject.transform.position +
+                    replacementObject.transform.rotation * info.positionOffset;
+
+                newObject.transform.rotation =
+                    replacementObject.transform.rotation * info.rotation;
+                
+                sliceParts.Add(newObject);
+                
+            }
+
+            return true;
+        }
+
+        int GetCachedSliceCount(GameObject lookupObject)
+        {
+            Mesh mesh = lookupObject.GetComponent<MeshFilter>().sharedMesh;
+            string key = mesh.name + " Instance";
+            if (destructionCache.TryGetValue(key, out SliceInfo[] sliceInfo))
+            {
+                return sliceInfo.Length;
+            }
+            return 0;
+        }
+        
+        
 
         bool Fragment(GameObject obj, int iterations)
         {
@@ -49,12 +239,7 @@ namespace BladeAndTitan.DestructionPhysics
                             GameObject.DestroyImmediate(slices[i]);
                         else
                         {
-                            var body = candidate.AddComponent<Rigidbody>();
-                            var col = candidate.AddComponent<MeshCollider>();
-
-                            body.mass = 20;
-                            col.sharedMesh = candidate.GetComponent<MeshFilter>().sharedMesh;
-                            col.convex = true;
+                            sliceParts.Add(candidate);
                         }
                     }
                     return true;

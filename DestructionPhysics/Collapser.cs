@@ -15,14 +15,9 @@ namespace BladeAndTitan.DestructionPhysics
             currentHp = startingHp;
         }
 
-        public virtual void ReceiveDamage(float damage)
-        {
-            currentHp -= damage;
-            if (HasCollapsed && gameObject.activeInHierarchy)
-                Collapse();
-        }
 
-        public virtual void Collapse(){}
-        public virtual void ReceiveAllDamage() => ReceiveDamage(currentHp);
+
+        public virtual void Collapse(float radius, Vector3 explosionPosition, float force){}
+
     }
 }

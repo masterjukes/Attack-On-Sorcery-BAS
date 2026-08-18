@@ -84,6 +84,9 @@
         <Reference Include="UnityEngine.TerrainModule">
           <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\Managed\UnityEngine.TerrainModule.dll</HintPath>
         </Reference>
+        <Reference Include="UnityEngine.TerrainPhysicsModule">
+          <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\Managed\UnityEngine.TerrainPhysicsModule.dll</HintPath>
+        </Reference>
         <Reference Include="UnityEngine.UI">
           <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\Managed\UnityEngine.UI.dll</HintPath>
         </Reference>
@@ -115,6 +118,7 @@
         <Compile Include="DestructionPhysics\EzSlice\TextureRegion.cs" />
         <Compile Include="DestructionPhysics\EzSlice\Triangle.cs" />
         <Compile Include="DestructionPhysics\EzSlice\Triangulator.cs" />
+        <Compile Include="DestructionPhysics\PhysicsComponent.cs" />
         <Compile Include="HouseDestroyer.cs" />
         <Compile Include="LightningBolt.cs" />
         <Compile Include="LineRendererController.cs" />
@@ -129,6 +133,7 @@
         <Compile Include="TitanShifting\Abstract\PlayerTitan.cs" />
         <Compile Include="TitanShifting\Abstract\TitanHand.cs" />
         <Compile Include="TitanShifting\Abstract\TitanPosess.cs" />
+        <Compile Include="TitanShifting\FootStamper.cs" />
         <Compile Include="TitanShifting\PlayerHandTitanLock.cs" />
         <Compile Include="TitanShifting\PlayerLocomotionPatchTests.cs" />
         <Compile Include="TitanShifting\ShiftEffectGenerator.cs" />

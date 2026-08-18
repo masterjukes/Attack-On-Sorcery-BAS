@@ -10,7 +10,11 @@ public class LongerGrassDistance : LevelModule
     
     public override IEnumerator OnPlayerSpawnCoroutine()
     {
-        GameObject.Find("Terrains").GetComponentInChildren<Terrain>().detailObjectDistance = distance;
+        foreach (var componentsInChild in GameObject.Find("Terrains").GetComponentsInChildren<Terrain>())
+        {
+            componentsInChild.detailObjectDistance = distance;
+        }
+
         return base.OnPlayerSpawnCoroutine();
     }
 }
