@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using BladeAndTitan.DestructionPhysics;
+using BladeAndTitan.Titans.Generic;
 using BladeAndTitan.TitanShifting.Abstract;
 using ThunderRoad;
 using UnityEngine;
@@ -190,6 +191,19 @@ public class ColossalTitan : PlayerTitanBase
             if (collider.gameObject.GetComponent<SimplePhysicsObject>())
             {
                 collider.gameObject.GetComponent<SimplePhysicsObject>().AddExplosionForce(force, explosionPosition, radius, 3, ForceMode.Impulse);
+            }
+            
+            if (collider.GetComponentInParent<TitanGeneric>())
+            {
+                var titan = collider.GetComponentInParent<TitanGeneric>();
+                var titanRb = titan.GetComponent<Rigidbody>();
+            
+                titanRb.isKinematic = false;
+                titanRb.useGravity = true;
+                titanRb.AddExplosionForce(force, explosionPosition, radius, 3, ForceMode.Impulse);;
+                titan.Kill();
+            
+            
             }
             
         }

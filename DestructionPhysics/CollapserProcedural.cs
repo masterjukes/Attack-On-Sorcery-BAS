@@ -97,6 +97,12 @@ namespace BladeAndTitan.DestructionPhysics
 
             if (debrisObjects.Count >= maxDebrisObjects)
             {
+                if (maxDebrisObjects == 0)
+                {
+                    GameObject.Destroy(gameObject);
+                    return;
+                }
+                
                 for (int i = 0; i < debrisObjects.Count; i++)
                 {
                     GameObject.Destroy(debrisObjects[0]);
@@ -105,7 +111,6 @@ namespace BladeAndTitan.DestructionPhysics
                 debrisObjects.RemoveRange(0, (int) Mathf.Pow(2, maxSlicesPerHouse));
                 
             }
-            
             
             
             if (GetCachedSliceCount(meshNode) != (int) Mathf.Pow(2, maxSlicesPerHouse)  || !InstatiateCachedSlices(meshNode))

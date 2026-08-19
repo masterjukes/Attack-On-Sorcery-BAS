@@ -31,6 +31,58 @@ public class WarhammerTitan : PlayerTitanBase
     protected override Quaternion TitanHeadRotation => Quaternion.Euler(0, 0, 0);
     */
 
+
+    private static Animator spikeAnimator;
+    private ParticleSystem electricEffect;
+    
+    private static readonly int Healing = Animator.StringToHash("Healing");
+    private static readonly int SpikesAoE = Animator.StringToHash("SpikesAoE");
+    private static readonly int SpikesForward = Animator.StringToHash("SpikesForward");
+    private static readonly int SpikesCircle = Animator.StringToHash("SpikesCircle");
+    
+
+    protected override void OnTitanPossess()
+    {
+        base.OnTitanPossess();
+        spikeAnimator = titan.transform.FindChildRecursive("DamageSpikes").GetComponent<Animator>();
+        electricEffect = titan.transform.FindChildRecursive($"Electric{spellCaster.side.ToString()}").GetComponent<ParticleSystem>();
+    }
+
+    public override void Throw(Vector3 velocity)
+    {
+        base.Throw(velocity);
+
+        Vector3 direction = velocity.normalized;
+
+        bool palmFacingForward =
+            Vector3.Dot(spellCaster.ragdollHand.PalmDir, Player.local.transform.forward) > 0.8f;
+        
+        bool palmFacingUp = Vector3.Dot(spellCaster.ragdollHand.PalmDir, Vector3.up) > 0.8f;
+
+        bool thrownForward =
+            Vector3.Dot(direction, Player.local.transform.forward) > 0.8f;
+
+        bool thrownUp =
+            Vector3.Dot(direction, Vector3.up) > 0.8f;
+
+        if (palmFacingForward && thrownForward)
+        {
+            CastAbility(SpikesForward);
+        }
+        else if (thrownUp && palmFacingUp)
+        {
+            if (velocity.magnitude > 10f)
+            {
+                CastAbility(SpikesAoE);
+            }
+            else
+            {
+                CastAbility(SpikesCircle);
+            }
+        }
+    }
+
+
     protected override void SetHands(GameObject o)
     {
         var handR = o.transform.FindChildRecursive("mixamorig:RightHand").gameObject.AddComponent<TitanHand>();
@@ -71,5 +123,25 @@ public class WarhammerTitan : PlayerTitanBase
         handR.requiredFlingVelocity = 4f;
         handR.maxAllowed = 1;
         
+        /* left -> 45, 90, 0 */
+        /* right -> 45, -90, 0 */
+        
     }
+
+
+
+    void CastAbility(int hash)
+    {
+        if(AnimatorIsPlaying()) return;
+        spikeAnimator.Play(hash);
+        PlaySound("ElectricWarhammerAudio", spellCaster.transform.position);
+        PlaySound("SpikeCreationWarhammer", spellCaster.transform.position);
+        electricEffect.Play();
+    }
+    
+    static bool AnimatorIsPlaying(){
+        return spikeAnimator.GetCurrentAnimatorStateInfo(0).length >
+               spikeAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime;
+    }
+    
 }

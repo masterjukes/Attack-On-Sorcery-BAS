@@ -60,6 +60,7 @@ public class BladeEjectionBehaviour : MonoBehaviour
 
         if (item.holder != null && remainingBlades != 6)
         {
+            Debug.Log(item.holder.name);
             remainingBlades = 6;
             Debug.Log("Holstered");
             var holder = item.holder;

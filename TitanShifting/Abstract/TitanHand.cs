@@ -26,6 +26,14 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
         List<GrabData> grabs = new();
 
+        
+        /*
+        [ModOption] [ModOptionIntValues(0, 360, 1)] public static int thumbYRot = 0;
+        [ModOption] [ModOptionIntValues(0, 360, 1)] public static int thumbXRot = 0;
+        [ModOption] [ModOptionIntValues(0, 360, 1)] public static int thumnZRot = 0;
+        [ModOption] public static bool thumbSwapXY = false;
+        */
+
 
         public string thumbParentName;
         public string indexParentName;
@@ -77,10 +85,18 @@ namespace BladeAndTitan.TitanShifting.Abstract
         private Vector3 previousPosition;
         
         
-
+        private void CleanupTriggerList()
+        {
+            for (int i = collidersInHandTrigger.Count - 1; i >= 0; i--)
+            {
+                if (collidersInHandTrigger[i] == null)
+                    collidersInHandTrigger.RemoveAt(i);
+            }
+        }
 
         private void OnTriggerEnter(Collider other)
         {
+            CleanupTriggerList();
             if (!other.isTrigger && collidersInHandTrigger.Count < maxAllowed &&
                 other.GetComponentInParent<Player>() == null)
             {
@@ -237,21 +253,29 @@ namespace BladeAndTitan.TitanShifting.Abstract
             }
 
             // ===== PROXIMAL =====
+
             thumb.localRotation = SwapXY(thumbMain.localRotation);
+                
             index.localRotation = SwapXY(indexMain.localRotation);
             middle.localRotation = SwapXY(middleMain.localRotation);
             ring.localRotation = SwapXY(ringMain.localRotation);
             pinky.localRotation = SwapXY(pinkyMain.localRotation);
 
+
+
             // ===== INTERMEDIATE =====
+
             thumb.GetChild(0).localRotation = SwapXY(thumbMain.GetChild(0).localRotation);
+                
             index.GetChild(0).localRotation = SwapXY(indexMain.GetChild(0).localRotation);
             middle.GetChild(0).localRotation = SwapXY(middleMain.GetChild(0).localRotation);
             ring.GetChild(0).localRotation = SwapXY(ringMain.GetChild(0).localRotation);
             pinky.GetChild(0).localRotation = SwapXY(pinkyMain.GetChild(0).localRotation);
 
             // ===== DISTAL =====
+
             thumb.GetChild(0).GetChild(0).localRotation = SwapXY(thumbMain.GetChild(0).GetChild(0).localRotation);
+            
             index.GetChild(0).GetChild(0).localRotation = SwapXY(indexMain.GetChild(0).GetChild(0).localRotation);
             middle.GetChild(0).GetChild(0).localRotation = SwapXY(middleMain.GetChild(0).GetChild(0).localRotation);
             ring.GetChild(0).GetChild(0).localRotation = SwapXY(ringMain.GetChild(0).GetChild(0).localRotation);

@@ -39,6 +39,7 @@ namespace BladeAndTitan.ODMGear
         public GameObject highlighter;
         private GrapplingRope grapple;
         public bool gasButtonPressed;
+        
 
         AudioSource audioSource;
         private void Start()
@@ -52,6 +53,13 @@ namespace BladeAndTitan.ODMGear
             
             highlighter = new GameObject("Highlighter");
             hookPoint = new GameObject("HookPoint");
+            hookPoint.name = "HookPoint";
+            hookPoint.GetOrAddComponent<SphereCollider>().radius = 0.1f;
+            hookPoint.GetComponent<Collider>().enabled = false;
+            hookPoint.GetOrAddComponent<Rigidbody>().isKinematic = true;
+            hookPoint.GetOrAddComponent<HookColliderChecker>();
+            hookPoint.GetComponent<Rigidbody>().drag = 0.1f;
+            hookPoint.GetComponent<Rigidbody>().collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
             Player.currentCreature.locomotion.SetAllSpeedModifiers("hamagane", 20f);
 
 
@@ -65,12 +73,25 @@ namespace BladeAndTitan.ODMGear
                 Vector3 position = ragdollHand.transform.position;
 
 
-                if ( (!isHooked) && Physics.Raycast(position, direction, out RaycastHit hit, maxDistance, layerMask, QueryTriggerInteraction.Ignore))
+                if ( (!isHooked))
                 {
                     isHooked = true;
-                    hookPoint.transform.parent = hit.collider.gameObject.transform;
-                    hookPoint.transform.position = hit.point;
-                    grapple.Grapple(ragdollHand.transform, hookPoint.transform);
+                    hookPoint.transform.position = position;
+                    hookPoint.transform.position += direction.normalized * 0.4f;
+                    
+                    hookPoint.GetComponent<Collider>().enabled = true;
+                    Rigidbody rb = hookPoint.GetComponent<Rigidbody>();
+                    float targetDistance = maxDistance;
+                    float drag = rb.drag;
+                    float requiredVelocity = targetDistance * drag;
+
+                    rb.isKinematic = false;
+                    rb.useGravity = true;
+                    rb.AddForce(direction.normalized * requiredVelocity * 10, ForceMode.VelocityChange);
+                    
+                    Transform grappleOrigin = Player.currentCreature.holders.FirstOrDefault(h => h.name == $"Hips{ragdollHand.side}")!.transform;
+                    
+                    grapple.Grapple(grappleOrigin, hookPoint.transform);
                     PlaySound("HookAttachODM");
                     
                 }
@@ -83,6 +104,7 @@ namespace BladeAndTitan.ODMGear
                 { 
                     isHooked = false;
                     hookPoint.transform.parent = null;
+                    
                     grapple.UnGrapple();
                     PlaySound("HookRetractODM");
                 }
@@ -130,7 +152,7 @@ namespace BladeAndTitan.ODMGear
             
             
             
-            if (grapple.Grappling)
+            if (grapple.Grappling && hookPoint.GetComponent<HookColliderChecker>().isHooked)
             {
                 Vector3 position = Player.local.transform.position;
                 Vector3 force = (hookPoint.transform.position - position).normalized * (Time.deltaTime * pullForce);
