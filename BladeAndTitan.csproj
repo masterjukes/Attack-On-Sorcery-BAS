@@ -125,9 +125,14 @@
         <Compile Include="Map\LongerGrassDistance.cs" />
         <Compile Include="Map\ViewDistanceIncrease.cs" />
         <Compile Include="ODMGear\BladeEjectionModule.cs" />
+        <Compile Include="ODMGear\GasBooster.cs" />
+        <Compile Include="ODMGear\GasCanister.cs" />
         <Compile Include="ODMGear\GrapplingHook.cs" />
         <Compile Include="ODMGear\HookColliderCheckr.cs" />
         <Compile Include="ODMGear\OdmGearModule.cs" />
+        <Compile Include="ODMGear\WireAttaching\Rope.cs" />
+        <Compile Include="ODMGear\WireAttaching\RopeMesh.cs" />
+        <Compile Include="ODMGear\WireAttaching\WireDetector.cs" />
         <Compile Include="Properties\AssemblyInfo.cs"/>
         <Compile Include="RascalPhysicsColliderProperties.cs" />
         <Compile Include="RascalSkinnedMeshCollider.cs" />

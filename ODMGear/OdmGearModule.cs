@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Linq;
 using System.Net.Mime;
+using BladeAndTitan.DebugHelpers;
+using BladeAndTitan.ODMGear.WireAttaching;
 using ThunderRoad;
 using UnityEngine;
 using UnityEngine.UI;
@@ -24,8 +26,11 @@ namespace BladeAndTitan.ODMGear
         public override void OnItemLoaded(Item item)
         {
             base.OnItemLoaded(item);
-            item.GetOrAddComponent<OdmGear>();
+            var gear = item.GetOrAddComponent<OdmGear>();
             item.GetOrAddComponent<BladeEjectionBehaviour>();
+            var detector = item.transform.FindChildRecursive("WirePoint").gameObject.AddComponent<WireDetector>();
+            detector.expectedWireNames = new[] {"SwordWireR", "SwordWireL"};
+            gear.wireDetector = detector;
         }
     }
     
@@ -39,6 +44,9 @@ namespace BladeAndTitan.ODMGear
         public GameObject highlighter;
         private GrapplingRope grapple;
         public bool gasButtonPressed;
+        
+        public WireDetector wireDetector;
+        bool isOdmAttached => wireDetector.isAttached;
         
 
         AudioSource audioSource;
@@ -55,7 +63,7 @@ namespace BladeAndTitan.ODMGear
             hookPoint = new GameObject("HookPoint");
             hookPoint.name = "HookPoint";
             hookPoint.GetOrAddComponent<SphereCollider>().radius = 0.1f;
-            hookPoint.GetComponent<Collider>().enabled = false;
+            hookPoint.GetComponent<SphereCollider>().enabled = false;
             hookPoint.GetOrAddComponent<Rigidbody>().isKinematic = true;
             hookPoint.GetOrAddComponent<HookColliderChecker>();
             hookPoint.GetComponent<Rigidbody>().drag = 0.1f;
@@ -72,6 +80,8 @@ namespace BladeAndTitan.ODMGear
                 Vector3 direction = Quaternion.AngleAxis(20f, ragdollHand.transform.forward) * ragdollHand.transform.right * -1;
                 Vector3 position = ragdollHand.transform.position;
 
+                if(!isOdmAttached)
+                    return;
 
                 if ( (!isHooked))
                 {
@@ -116,7 +126,8 @@ namespace BladeAndTitan.ODMGear
         private void Update()
         {
             if (PlayerControl.loader != PlayerControl.Loader.Oculus) return;
-
+            if(item?.mainHandler == null) return;
+            
             var button = ((InputXR_Oculus)PlayerControl.input).GetController(item.mainHandler.side).thumbstickClick;
             
             if (button.GetDown())
@@ -141,7 +152,7 @@ namespace BladeAndTitan.ODMGear
             const float pullForce = 20f;
             const float gasDirectionSpeed = 0.1f;
 
-            if (item.mainHandler == null)
+            if (item?.mainHandler == null)
             {
                 if (grapple.Grappling)
                     grapple.UnGrapple();
@@ -175,7 +186,6 @@ namespace BladeAndTitan.ODMGear
             {
                 Vector3 direction = Quaternion.AngleAxis(20f, item.mainHandler.transform.forward) * item.mainHandler.transform.right * -1;
                 direction *= gasDirectionSpeed;
-                Player.local.locomotion.isGrounded = false;
                 Player.local.locomotion.physicBody.rigidBody.AddForce(direction, ForceMode.VelocityChange);
             }
             

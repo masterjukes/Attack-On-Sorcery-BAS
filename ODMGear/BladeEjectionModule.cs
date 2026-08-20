@@ -18,6 +18,8 @@ public class BladeEjectionBehaviour : MonoBehaviour
     public bool wasPreviouslyHolstered = false;
     
     public Stack<DamageType> lastDamageTypes = new Stack<DamageType> ();
+    private float originalSize;
+    
     
     Dictionary<int, string> bladeMap = new Dictionary<int, string>() {{6, "First"}, {5, "Second"}, {4, "Third"}, {3, "Fourth"}, {2, "Fith"}, {1, "Sixth"}};
     Dictionary<int, float> sizeMap = new Dictionary<int, float>() {{6, 0.1035f}, {5, 0.1035f}, {4, 0.1035f}, {3, 0.1035f}, {2, 0.1035f}, {1, 0.1135f}};
@@ -28,6 +30,8 @@ public class BladeEjectionBehaviour : MonoBehaviour
         item.OnHeldActionEvent += ItemOnOnHeldActionEvent;
         bladeParent = item.GetCustomReference("Joints");
         bladeCollider = item.GetCustomReference("BladeCollider");
+        originalSize = bladeCollider.GetComponent<BoxCollider>().size.y;;
+
         bladeCollider.GetComponent<BoxCollider>();
         item.mainCollisionHandler.OnCollisionStartEvent += MainCollisionHandlerOnOnCollisionStartEvent;
 
@@ -38,7 +42,7 @@ public class BladeEjectionBehaviour : MonoBehaviour
     {
         lastDamageTypes.Push(collisionInstance.damageStruct.damageType);
 
-        if (collisionInstance.impactVelocity.magnitude > 5f)
+        if (collisionInstance.impactVelocity.magnitude > 30f)
         {
             ReleaseBlade();
         }
@@ -63,21 +67,25 @@ public class BladeEjectionBehaviour : MonoBehaviour
             Debug.Log(item.holder.name);
             remainingBlades = 6;
             Debug.Log("Holstered");
-            var holder = item.holder;
-            Catalog.GetData<ItemData>(item.data.id).SpawnAsync(i =>
-            {
-                holder.UnSnapAll();
-                holder.SnapItemSilent(i);
-                item.Despawn();
-                Catalog.LoadAssetAsync<AudioContainer>("BladeAttachODM", q =>
-                {
-                    q.PlayClipAtPoint(holder.transform.position, 1.0f, AudioMixerName.Effect);
-                }, "BladeAttachODM");
-                
-            });
+            RegenerateBlades();
             
         }
             
+    }
+
+    void RegenerateBlades()
+    {
+        for (int i = 1; i < 7; i++)
+        {
+            var name = bladeMap[i];
+            var originBlade = bladeParent.FindChildRecursiveTR(name);
+            originBlade.gameObject.SetActive(true);
+        }
+
+        var col = bladeCollider.GetComponent<BoxCollider>();
+        col.size = new Vector3(col.size.x, originalSize, col.size.z);
+        
+
     }
     
     private void ItemOnOnHeldActionEvent(RagdollHand ragdollHand, Handle handle, Interactable.Action action)
@@ -97,7 +105,10 @@ public class BladeEjectionBehaviour : MonoBehaviour
 
             
             var name = bladeMap[remainingBlades];
-            var blade = bladeParent.FindChildRecursiveTR(name);
+            var originBlade = bladeParent.FindChildRecursiveTR(name);
+            
+            var blade = Instantiate(originBlade, originBlade.position, originBlade.rotation);
+            originBlade.gameObject.SetActive(false);
             
             Catalog.LoadAssetAsync<AudioContainer>("BladeDetachODM", q =>
             {
@@ -105,7 +116,8 @@ public class BladeEjectionBehaviour : MonoBehaviour
             }, "BladeDetachODM");
             
             blade.SetParent(null);
-            blade.GetOrAddComponent<Rigidbody>().AddForce(blade.up * 2f, ForceMode.Impulse);
+            var rb = blade.GetOrAddComponent<Rigidbody>();
+            rb.velocity = item.Velocity;
             blade.GetComponent<MeshCollider>().enabled = true;
                 
             var col = bladeCollider.GetComponent<BoxCollider>();
