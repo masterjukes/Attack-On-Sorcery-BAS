@@ -15,6 +15,8 @@ public class GasBoosterModule : ItemModule
         
         Catalog.GetData<ItemData>("ODMWireObject").SpawnAsync(swr =>
         {
+
+
             
             booster.SwordWireR = swr;
             swr.name = "SwordWireR";
@@ -26,6 +28,12 @@ public class GasBoosterModule : ItemModule
             var rope = swr.gameObject.AddComponent<WireAttaching.Rope>();
             rope.ropeLength = 1.4f;
             rope.startPoint = item.transform.FindChildRecursive("SwordWirePointR");
+
+            var joint = rope.startPoint.gameObject.AddComponent<SpringJoint>();
+            rope.startPoint.GetComponent<Rigidbody>().isKinematic = true;
+            joint.connectedBody = swr.GetComponent<Rigidbody>();
+            joint.maxDistance = 1.5f;
+            
             rope.endPoint = swr.transform;
             
         });
@@ -43,6 +51,11 @@ public class GasBoosterModule : ItemModule
             rope.startPoint = item.transform.FindChildRecursive("SwordWirePointL");
             rope.endPoint = swr.transform;
             
+            var joint = rope.startPoint.gameObject.AddComponent<SpringJoint>();
+            rope.startPoint.GetComponent<Rigidbody>().isKinematic = true;
+            joint.connectedBody = swr.GetComponent<Rigidbody>();
+            joint.maxDistance = 1.5f;
+            
         });
         Catalog.GetData<ItemData>("ODMWireObject").SpawnAsync(swr =>
         {
@@ -58,6 +71,11 @@ public class GasBoosterModule : ItemModule
             rope.startPoint = item.transform.FindChildRecursive("WirePointR");
             rope.endPoint = swr.transform;
             
+            var joint = rope.startPoint.gameObject.AddComponent<SpringJoint>();
+            rope.startPoint.GetComponent<Rigidbody>().isKinematic = true;
+            joint.connectedBody = swr.GetComponent<Rigidbody>();
+            joint.maxDistance = 1.5f;
+            
         });
         Catalog.GetData<ItemData>("ODMWireObject").SpawnAsync(swr =>
         {
@@ -72,6 +90,11 @@ public class GasBoosterModule : ItemModule
             rope.ropeLength = 1.4f;
             rope.startPoint = item.transform.FindChildRecursive("WirePointL");
             rope.endPoint = swr.transform;
+            
+            var joint = rope.startPoint.gameObject.AddComponent<SpringJoint>();
+            rope.startPoint.GetComponent<Rigidbody>().isKinematic = true;
+            joint.connectedBody = swr.GetComponent<Rigidbody>();
+            joint.maxDistance = 1.5f;
             
         });
         
@@ -93,8 +116,43 @@ public class GasBooster : MonoBehaviour
     {
         self = GetComponent<Item>();
         self.OnDespawnEvent += SelfOnOnDespawnEvent;
+        
     }
 
+    GasCanisterTracker GetCanister(Side side)
+    {
+        return side == Side.Left ? GasWireL.GetComponentInParent<GasCanisterTracker>() : GasWireR.GetComponentInParent<GasCanisterTracker>();
+    }
+
+
+    public void ReelIn(Side handSide, Vector3 force)
+    {
+        var canister = GetCanister(handSide);
+        if(canister == null) return;
+        
+        if(!canister.UseGas(0.7f * Time.fixedDeltaTime)) return;
+
+        
+        Rigidbody rb = Player.local.locomotion.physicBody.rigidBody;
+        rb.AddForce(force, ForceMode.VelocityChange);
+        canister.UseGas(0.7f * Time.fixedDeltaTime);
+    }
+
+    public bool UseGas(Side handSide, Vector3 force)
+    {
+        var canister = GetCanister(handSide);
+        if(canister == null) return false;
+        
+        if(!canister.UseGas(1.3f * Time.fixedDeltaTime)) return false;
+        
+        Rigidbody rb = Player.local.locomotion.physicBody.rigidBody;
+        rb.AddForce(force, ForceMode.VelocityChange);
+        
+        return true;
+    }
+    
+    
+    
     private void SelfOnOnDespawnEvent(EventTime eventTime)
     {
         if(eventTime == EventTime.OnEnd)

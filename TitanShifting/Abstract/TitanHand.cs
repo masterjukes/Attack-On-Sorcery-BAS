@@ -27,12 +27,12 @@ namespace BladeAndTitan.TitanShifting.Abstract
         List<GrabData> grabs = new();
 
         
-        /*
-        [ModOption] [ModOptionIntValues(0, 360, 1)] public static int thumbYRot = 0;
-        [ModOption] [ModOptionIntValues(0, 360, 1)] public static int thumbXRot = 0;
-        [ModOption] [ModOptionIntValues(0, 360, 1)] public static int thumnZRot = 0;
-        [ModOption] public static bool thumbSwapXY = false;
-        */
+        
+        public float thumbYRot = 0;
+        public float thumbXRot = 0;
+        public float thumnZRot = 0;
+        public bool useXYSwapRotation;
+        
 
 
         public string thumbParentName;
@@ -245,16 +245,31 @@ namespace BladeAndTitan.TitanShifting.Abstract
             var pinkyMain = offset.FindChildRecursive("LittleProximal");
             var thumbMain = offset.FindChildRecursive("ThumbProximal");
 
+
+            Quaternion SwapThumb(Quaternion q)
+            {
+                if(useXYSwapRotation)
+                    return SwapXY(q);
+                var e = q.eulerAngles;
+                return Quaternion.Euler(e.y, e.x, e.z);
+            }
+            
             // Helper function to swap X and Y
             Quaternion SwapXY(Quaternion q)
             {
                 Vector3 e = q.eulerAngles;
                 return Quaternion.Euler(-e.y, e.x, e.z);
             }
+            
+            Quaternion SwapXZ(Quaternion q)
+            {
+                Vector3 e = q.eulerAngles;
+                return Quaternion.Euler(-e.z, e.y, e.x);
+            }
 
             // ===== PROXIMAL =====
 
-            thumb.localRotation = SwapXY(thumbMain.localRotation);
+            thumb.localRotation = SwapThumb(thumbMain.localRotation);
                 
             index.localRotation = SwapXY(indexMain.localRotation);
             middle.localRotation = SwapXY(middleMain.localRotation);
@@ -265,7 +280,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
             // ===== INTERMEDIATE =====
 
-            thumb.GetChild(0).localRotation = SwapXY(thumbMain.GetChild(0).localRotation);
+            thumb.GetChild(0).localRotation = SwapThumb(thumbMain.GetChild(0).localRotation);
                 
             index.GetChild(0).localRotation = SwapXY(indexMain.GetChild(0).localRotation);
             middle.GetChild(0).localRotation = SwapXY(middleMain.GetChild(0).localRotation);
@@ -274,12 +289,23 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
             // ===== DISTAL =====
 
-            thumb.GetChild(0).GetChild(0).localRotation = SwapXY(thumbMain.GetChild(0).GetChild(0).localRotation);
+            thumb.GetChild(0).GetChild(0).localRotation = SwapThumb(thumbMain.GetChild(0).GetChild(0).localRotation);
             
             index.GetChild(0).GetChild(0).localRotation = SwapXY(indexMain.GetChild(0).GetChild(0).localRotation);
             middle.GetChild(0).GetChild(0).localRotation = SwapXY(middleMain.GetChild(0).GetChild(0).localRotation);
             ring.GetChild(0).GetChild(0).localRotation = SwapXY(ringMain.GetChild(0).GetChild(0).localRotation);
             pinky.GetChild(0).GetChild(0).localRotation = SwapXY(pinkyMain.GetChild(0).GetChild(0).localRotation);
+            
+            thumb.Rotate(thumbXRot, thumbYRot, thumnZRot);
+            
+            
+            
+            
+            if(side == Side.Right)
+                thumb.GetChild(0).GetChild(0).Rotate(0,45,0);
+            else
+                thumb.GetChild(0).GetChild(0).Rotate(0,-45,0);
+            
         }
 
 
@@ -426,8 +452,6 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
             var proxy = new GameObject($"TitanHandMassProxy_{side}");
 
-            // Deliberately do not parent this to the VR hand or titan.
-            // It must remain a world-space Rigidbody for the simulated mass to work.
             proxy.transform.position = controllerTarget.position;
             proxy.transform.rotation = controllerTarget.rotation;
 
@@ -465,7 +489,6 @@ namespace BladeAndTitan.TitanShifting.Abstract
             
             float dt = Time.fixedDeltaTime;
 
-            // Hand/controller movement since the previous physics frame.
             Vector3 controllerVelocity = Vector3.zero;
             Vector3 controllerAngularVelocity = Vector3.zero;
 
@@ -493,9 +516,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
             previousTargetRotation = controllerTarget.rotation;
             hasPreviousTargetPose = true;
 
-            // This mirrors PlayerLink's locomotion velocity correction:
-            // when the player runs, jumps, or falls, the titan hand inherits that motion
-            // instead of having to be pulled after the player by the spring.
+
             Vector3 playerVelocity = Vector3.zero;
 
             if (Player.local?.locomotion?.physicBody != null)
@@ -516,7 +537,6 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
             float errorDistance = positionError.magnitude;
 
-            // Stronger, more damped correction once the hand is noticeably behind.
             float spring = positionSpring;
             float damper = positionDamper;
 
@@ -561,7 +581,6 @@ namespace BladeAndTitan.TitanShifting.Abstract
             currentControllerVelocity = controllerVelocity;
             currentControllerAngularVelocity = controllerAngularVelocity;
             
-            // Teleports, respawns, and extreme desyncs should not leave hands behind.
             if (positionError.sqrMagnitude >
                 scaledMaxLagDistance * scaledMaxLagDistance)
             {

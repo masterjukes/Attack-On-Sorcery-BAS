@@ -57,6 +57,9 @@
         <Reference Include="ThunderRoad">
           <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\Managed\ThunderRoad.dll</HintPath>
         </Reference>
+        <Reference Include="Unity.Animation.Rigging">
+          <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\Managed\Unity.Animation.Rigging.dll</HintPath>
+        </Reference>
         <Reference Include="Unity.ResourceManager">
           <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\Managed\Unity.ResourceManager.dll</HintPath>
         </Reference>
@@ -74,6 +77,9 @@
         </Reference>
         <Reference Include="UnityEngine.ParticleSystemModule">
           <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\Managed\UnityEngine.ParticleSystemModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.Physics2DModule">
+          <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\Managed\UnityEngine.Physics2DModule.dll</HintPath>
         </Reference>
         <Reference Include="UnityEngine.PhysicsModule">
           <HintPath>E:\SteamLibrary\steamapps\common\Blade &amp; Sorcery\BladeAndSorcery_Data\Managed\UnityEngine.PhysicsModule.dll</HintPath>
@@ -154,7 +160,63 @@
         <Compile Include="Titans\Generic\Titan.cs" />
         <Compile Include="Titans\Generic\TitanEatTrigger.cs" />
         <Compile Include="Titans\Generic\TitanLimb.cs" />
+        <Compile Include="Titans\Generic\TitanPickUpTrigger.cs" />
         <Compile Include="Titans\Generic\TitanTriggerAgro.cs" />
+        <Compile Include="Titans\LookAnimator\FAnimationClips.cs" />
+        <Compile Include="Titans\LookAnimator\FAnimatorMethods.cs" />
+        <Compile Include="Titans\LookAnimator\FBasic_Enums.cs" />
+        <Compile Include="Titans\LookAnimator\FColorMethods.cs" />
+        <Compile Include="Titans\LookAnimator\FDebug.cs" />
+        <Compile Include="Titans\LookAnimator\FEasing.cs" />
+        <Compile Include="Titans\LookAnimator\FEditor_Handles.cs" />
+        <Compile Include="Titans\LookAnimator\FEditor_OneShotLog.cs" />
+        <Compile Include="Titans\LookAnimator\FEditor_ScriptMenuAddOptions.Prefabs.cs" />
+        <Compile Include="Titans\LookAnimator\FEngineering.cs" />
+        <Compile Include="Titans\LookAnimator\FGUI_Finders.cs" />
+        <Compile Include="Titans\LookAnimator\FGUI_Handles.cs" />
+        <Compile Include="Titans\LookAnimator\FGUI_Inspector.cs" />
+        <Compile Include="Titans\LookAnimator\FGUI_Resources.cs" />
+        <Compile Include="Titans\LookAnimator\FHierarchyIcons.cs" />
+        <Compile Include="Titans\LookAnimator\FLogicMethods.cs" />
+        <Compile Include="Titans\LookAnimator\FLookAnimator.cs" />
+        <Compile Include="Titans\LookAnimator\FPD_FoldableAttribute.cs" />
+        <Compile Include="Titans\LookAnimator\FPD_HeaderAttribute.cs" />
+        <Compile Include="Titans\LookAnimator\FPD_PercentageAttribute.cs" />
+        <Compile Include="Titans\LookAnimator\FPD_SuffixAttribute.cs" />
+        <Compile Include="Titans\LookAnimator\FPD_TabAttribute.cs" />
+        <Compile Include="Titans\LookAnimator\FStringMethods.cs" />
+        <Compile Include="Titans\LookAnimator\FTransformMethods.cs" />
+        <Compile Include="Titans\LookAnimator\FVectorMethods.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Class.CompensationBone.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Class.LookBone.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Custom.Actions.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Custom.MomentTargets.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Editor.Lang.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Editor.OldGUI.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Extensions.BirdMode.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Extensions.BoneWeights.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Extensions.Eyes.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Extensions.Nodding.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Extensions.Smoothing.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Logic.AnimateBones.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Logic.Core.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Logic.Coroutines.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Logic.LookAngles.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Logic.Measuring.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Logic.States.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Logic.Targeting.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Logic.Update.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Logic.UpdateBones.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Logic.UpdateReferencePose.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Logic.Variables.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Misc.BoneFinder.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Misc.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Misc.Enums.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Misc.Gizmos.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Misc.Logs.cs" />
+        <Compile Include="Titans\LookAnimator\LookAnimator.Misc.Maths.cs" />
+        <Compile Include="Titans\LookAnimator\SM_SwitchLookAnimator.cs" />
+        <Compile Include="Titans\LookAnimator\UniRotateBone.cs" />
     </ItemGroup>
     <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

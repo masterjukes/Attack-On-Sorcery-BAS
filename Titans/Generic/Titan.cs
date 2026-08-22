@@ -10,6 +10,8 @@ public class TitanGeneric : MonoBehaviour
 {
     public List<TitanLimb> limbs = new List<TitanLimb>();
 
+    public delegate void OnLimbDestroyDelegate(TitanLimb limb);
+    public event OnLimbDestroyDelegate OnLimbDestroy;
     
     public bool movementDisabled
     {
@@ -17,10 +19,7 @@ public class TitanGeneric : MonoBehaviour
         {
             var leftLeg = GetPart(TitanLimb.LimbType.LeftLeg);
             var rightLeg = GetPart(TitanLimb.LimbType.RightLeg);
-            if(leftLeg.isDisabled && rightLeg.isDisabled)
-                return true;
-            
-            if(eyesDisabled)
+            if(leftLeg.isDisabled || rightLeg.isDisabled || eyesDisabled)
                 return true;
             
             return false;
@@ -70,28 +69,28 @@ public class TitanGeneric : MonoBehaviour
         
         var armLeft = new GameObject("TitanLeftArm");
         armLeft.transform.SetParent(limnbParent.transform);
-        armLeft.GetOrAddComponent<TitanLimb>().SetupDefaultValues(3000, new []{"mixamorig:LeftArm"}, 100f, 10f, TitanLimb.LimbType.LeftArm);
+        armLeft.GetOrAddComponent<TitanLimb>().SetupDefaultValues(100, new []{"mixamorig:LeftArm"}, 5f, 10f, TitanLimb.LimbType.LeftArm);
         var armRight = new GameObject("TitanRightArm");
         armRight.transform.SetParent(limnbParent.transform);
-        armRight.GetOrAddComponent<TitanLimb>().SetupDefaultValues(3000, new []{"mixamorig:RightArm"}, 100f, 10f, TitanLimb.LimbType.RightArm);
+        armRight.GetOrAddComponent<TitanLimb>().SetupDefaultValues(100, new []{"mixamorig:RightArm"}, 5f, 10f, TitanLimb.LimbType.RightArm);
         
         
         var legleft = new GameObject("TitanLegLeft");
         legleft.transform.SetParent(limnbParent.transform);
-        legleft.GetOrAddComponent<TitanLimb>().SetupDefaultValues(3000, new []{"mixamorig:LeftLeg"}, 100f, 10f, TitanLimb.LimbType.LeftLeg);
+        legleft.GetOrAddComponent<TitanLimb>().SetupDefaultValues(100, new []{"mixamorig:LeftLeg"}, 5, 10f, TitanLimb.LimbType.LeftLeg);
         var legRight = new GameObject("TitanLegRight");
         legRight.transform.SetParent(limnbParent.transform);
-        legRight.GetOrAddComponent<TitanLimb>().SetupDefaultValues(3000, new []{"mixamorig:RightLeg"}, 100f, 10f, TitanLimb.LimbType.RightLeg);
+        legRight.GetOrAddComponent<TitanLimb>().SetupDefaultValues(100, new []{"mixamorig:RightLeg"}, 5f, 10f, TitanLimb.LimbType.RightLeg);
 
         
         var eyes = new GameObject("TitanEyes");
         eyes.transform.SetParent(limnbParent.transform);
-        eyes.GetOrAddComponent<TitanLimb>().SetupDefaultValues(500, new []{"EyeTrigger"}, 30f, 6f, TitanLimb.LimbType.Eye);
+        eyes.GetOrAddComponent<TitanLimb>().SetupDefaultValues(50, new []{"EyeTrigger"}, 3f, 6f, TitanLimb.LimbType.Eye);
         
         
         var jaw = new GameObject("TitanJaw");
         jaw.transform.SetParent(limnbParent.transform);
-        jaw.GetOrAddComponent<TitanLimb>().SetupDefaultValues(500, new []{"DisableJawColliders"}, 30f, 6f, TitanLimb.LimbType.Jaw);
+        jaw.GetOrAddComponent<TitanLimb>().SetupDefaultValues(50, new []{"DisableJawColliders"}, 3f, 6f, TitanLimb.LimbType.Jaw);
         
         
     }
@@ -106,7 +105,6 @@ public class TitanGeneric : MonoBehaviour
                 if (collider == name) return limb;
             }
         }
-        Debug.LogError("Limb not found");
         return null;
     }
 
@@ -117,7 +115,6 @@ public class TitanGeneric : MonoBehaviour
             if(limb.type == partType)
                 return limb;
         }
-        Debug.LogError("Limb not found");
         return null;
     }
 
@@ -158,8 +155,14 @@ public class TitanGeneric : MonoBehaviour
         else
         {
             var limb = FindLimbByCollider(collisionInstance.targetCollider.name);
-            if(limb != null)
+            if (limb != null)
+            {
                 limb.Damage(damage);
+                if (limb.isDisabled)
+                {
+                    OnLimbDestroy?.Invoke(limb);
+                }
+            }
         }
     }
     

@@ -25,11 +25,14 @@ public class AttackTitan : PlayerTitanBase
     protected override Quaternion TitanHandLeftRotation => Quaternion.Euler(0, 90, 90);
     protected override Quaternion TitanHandRightRotation => Quaternion.Euler(0, -90, -90);
     protected override Quaternion TitanHeadRotation => Quaternion.Euler(0, 0, 0);
-    /*
-    protected override Quaternion TitanHandLeftRotation => Quaternion.Euler(90, 90, 0);
-    protected override Quaternion TitanHandRightRotation => Quaternion.Euler(90, -90, 0);
-    protected override Quaternion TitanHeadRotation => Quaternion.Euler(0, 0, 0);
-    */
+    
+    Vector3 _thumbRotationRight = new Vector3(0, 0, 90);
+    Vector3 _thumbRotationLeft = new Vector3(0, 0, -90);
+    public override Vector3 thumbRotationLeft => _thumbRotationLeft;
+    public override Vector3 thumbRotationRight => _thumbRotationRight;
+    public override bool useXYThumbRotation => false;
+
+
 
     protected override void SetHands(GameObject o)
     {

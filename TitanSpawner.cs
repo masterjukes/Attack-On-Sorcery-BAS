@@ -22,6 +22,8 @@ public class TitanSpawner : ThunderScript
     float spawnMinDistance = 20f;
     float maxSpawnTries = 70f;
     float lastSpawnTime;
+
+    private float titanHeight;
     
     bool canSpawn;
 
@@ -60,6 +62,22 @@ public class TitanSpawner : ThunderScript
                 titanFaces[index] = tex;
             }, name);
         }
+        
+        Catalog.LoadAssetAsync<RuntimeAnimatorController>("GenericTitanAnimWalkClips", clips =>
+        {
+            GenericTitanAI.walkAnimationClips = clips.animationClips;
+            Debug.Log($"Loaded {clips.animationClips.Length} walk clips for titan ");
+            
+        }, "GenericTitanAnimWalkClips");;
+        
+        Catalog.LoadAssetAsync<RuntimeAnimatorController>("GenericTitanAnimRunClips", clips =>
+        {
+            Debug.Log($"Loaded {clips.animationClips.Length} run clips for titan ");
+
+            GenericTitanAI.runAnimationClips = clips.animationClips;
+
+        }, "GenericTitanAnimRunClips");;
+        
     }
 
     public override void ScriptUpdate()
@@ -131,9 +149,9 @@ public class TitanSpawner : ThunderScript
         Vector3 pos = hit.position;
 
         float titanRadius = 1.5f * DeviatedRandom(2.5f, 0.3f);
-        float titanHeight = 5f * DeviatedRandom(2.5f, 0.3f);
+        titanHeight =  DeviatedRandom(3f, 0.3f);
 
-        if (!CanFit(pos, titanRadius, titanHeight) || pos.y > 30)
+        if (!CanFit(pos, titanRadius,  5f * titanHeight) || pos.y > 30)
             return Vector3.zero;
 
         return pos;
@@ -161,8 +179,8 @@ public class TitanSpawner : ThunderScript
         var ai = o.AddComponent<TitanGeneric>();
 
         o.transform.FindChildRecursive("NapeWound").gameObject.SetActive(false);
-        
-        o.transform.localScale = DeviatedRandom(2.5f, 0.3f) * Vector3.one;
+
+        o.transform.localScale = Vector3.one * titanHeight;
         var hair = o.transform.FindChildRecursive("Hair");
         var hair2 = o.transform.FindChildRecursive("Hair2");
 
@@ -176,7 +194,16 @@ public class TitanSpawner : ThunderScript
         var faceTextureNumber = Random.Range(0, 5);
         var hairColorNumber = Random.Range(0, 5);
         var hairMeshNumber = Random.Range(0, 3);
-
+        
+        
+        
+        var titanMesh = o.transform.Find("Titan").gameObject.GetComponent<SkinnedMeshRenderer>();
+        titanMesh.SetBlendShapeWeight(0, Random.Range(0, 100));
+        titanMesh.SetBlendShapeWeight(1, Random.Range(0, 100));
+        titanMesh.SetBlendShapeWeight(2, Random.Range(0, 100));
+        
+        titanMesh.materials[0].color = Color.HSVToRGB(0.11f, (float)Random.Range(0, 70) / 100f, (float)Random.Range(0, 80) / 100f);
+        
         PlayAudio("TitanSpawn", o.GetComponent<AudioSource>());
 
         var lightningBolt = o.AddComponent<LightningBoltScript>();
@@ -246,7 +273,7 @@ public class TitanSpawner : ThunderScript
         collider.GetComponent<Collider>().enabled = true;
         
         var pickUpCollider = o.transform.Find("PickUpTrigger").gameObject;
-        //pickUpCollider.AddComponent<TTitanPickUpTrigger>();
+        pickUpCollider.AddComponent<TitanPickUpTrigger>();
         pickUpCollider.GetComponent<Collider>().enabled = true;
         
         

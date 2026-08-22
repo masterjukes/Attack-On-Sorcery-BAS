@@ -37,6 +37,11 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
         public abstract float handWeight { get; }
         
+        public abstract bool useXYThumbRotation { get; }
+
+        public abstract Vector3 thumbRotationLeft { get; }
+        public abstract Vector3 thumbRotationRight { get; }
+        
 
         private float lastHeadRotation;
 
@@ -239,7 +244,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
         {
             return CreateTarget(
                 RightHandTargetName,
-                Player.local.handRight.transform,
+                Player.local.handRight.root,
                 Vector3.zero,
                 TitanHandRightRotation
             );
@@ -310,6 +315,18 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
                 return;
             }
+            
+            leftTitanHand.thumbXRot = thumbRotationLeft.x;
+            leftTitanHand.thumbYRot = thumbRotationLeft.y;
+            rightTitanHand.thumbXRot = thumbRotationLeft.z;;
+            
+            rightTitanHand.thumbXRot = thumbRotationRight.x;;
+            rightTitanHand.thumbYRot = thumbRotationRight.y;
+            rightTitanHand.thumnZRot = thumbRotationRight.z;;
+            
+
+            leftTitanHand.useXYSwapRotation = useXYThumbRotation;
+            rightTitanHand.useXYSwapRotation = useXYThumbRotation;
 
             leftTitanHand.controllerMass = handWeight;
             rightTitanHand.controllerMass = handWeight;

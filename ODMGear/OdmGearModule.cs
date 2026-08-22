@@ -47,6 +47,7 @@ namespace BladeAndTitan.ODMGear
         
         public WireDetector wireDetector;
         bool isOdmAttached => wireDetector.isAttached;
+        GasBooster gasBooster => Player.currentCreature.holders.FirstOrDefault(h => h.name == "LowerBackholderODM")?.items.FirstOrDefault()?.GetComponent<GasBooster>();
         
 
         AudioSource audioSource;
@@ -133,8 +134,6 @@ namespace BladeAndTitan.ODMGear
             if (button.GetDown())
             {
                 gasButtonPressed = true;
-                if(audioSource.isPlaying == false)
-                    audioSource.Play();
             }
             if (button.GetUp())
             {
@@ -152,7 +151,7 @@ namespace BladeAndTitan.ODMGear
             const float pullForce = 20f;
             const float gasDirectionSpeed = 0.1f;
 
-            if (item?.mainHandler == null)
+            if (item?.mainHandler == null || !isOdmAttached)
             {
                 if (grapple.Grappling)
                     grapple.UnGrapple();
@@ -167,8 +166,8 @@ namespace BladeAndTitan.ODMGear
             {
                 Vector3 position = Player.local.transform.position;
                 Vector3 force = (hookPoint.transform.position - position).normalized * (Time.deltaTime * pullForce);
-                Rigidbody rb = Player.local.locomotion.physicBody.rigidBody;
-                rb.AddForce(force, ForceMode.VelocityChange);
+                
+                gasBooster.ReelIn(item.mainHandler.side, force);
                 
                 if (Player.local.locomotion.physicBody.rigidBody.useGravity && !gasButtonPressed)
                 {
@@ -186,7 +185,13 @@ namespace BladeAndTitan.ODMGear
             {
                 Vector3 direction = Quaternion.AngleAxis(20f, item.mainHandler.transform.forward) * item.mainHandler.transform.right * -1;
                 direction *= gasDirectionSpeed;
-                Player.local.locomotion.physicBody.rigidBody.AddForce(direction, ForceMode.VelocityChange);
+                if(!gasBooster.UseGas(item.mainHandler.side, direction))
+                    return;
+                
+                if(audioSource.isPlaying == false)
+                    audioSource.Play();
+
+                
             }
             
             UpdateCrosshair();

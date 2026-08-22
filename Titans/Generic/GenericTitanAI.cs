@@ -1,19 +1,25 @@
-﻿using ThunderRoad;
+﻿using System.Collections;
+using BladeAndTitan.Titans.LookAnimator;
+using ThunderRoad;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.Animations;
 
 namespace BladeAndTitan.Titans.Generic;
 
 public class GenericTitanAI : AIBase
 {
+    private static readonly int Kneel = Animator.StringToHash("Kneel");
+    private static readonly int Idle = Animator.StringToHash("Idle");
+    private static readonly int Walk = Animator.StringToHash("Walk");
+
+
     public enum AIBehaviourMode
     {
         Roaming,
         Chasing
     }
 
-
-    Animator anim;
     
     public AIBehaviourMode behaviourMode;
 
@@ -27,6 +33,24 @@ public class GenericTitanAI : AIBase
     private const string CastleCenter = "CastleCenter";
     private const string CountryCenter = "CountryCenter";
     private const string CityCenter = "CityCenter";
+    
+    private bool kneeling;
+    private bool eyesDestroyed;
+
+
+    private bool isAbberant;
+    
+    public static AnimationClip[] walkAnimationClips;
+    public static AnimationClip[] runAnimationClips;
+    
+    float turnSpeed = 50f;
+    float walkSpeed = 5.5f;
+    float runSpeed = 15f;
+    
+    FLookAnimator fLookAnimator;
+    
+    
+    bool isAnimationTriggerRunning => kneeling || eyesDestroyed;
 
     protected override void Start()
     {
@@ -36,7 +60,10 @@ public class GenericTitanAI : AIBase
         var tr = GameObject.Find(CountryCenter);
         var qa = GameObject.Find(CityCenter);
         
-        agent.speed = TitanSpawner.DeviatedRandom(8, 0.4f);
+        isAbberant = Random.Range(0, 6) == 4;
+        
+        
+
         
         var choice = Random.Range(0, 4);
         switch (choice)
@@ -47,8 +74,114 @@ public class GenericTitanAI : AIBase
             case 3: roamAreaCenter = qa.transform.position; break;
         }
         
+        float num3 = Random.Range(1.5f, 3f);
+        float num4 = Mathf.Lerp(1.2f, 0.7f, num3 / 3f);
+        
+        anim.SetFloat("Multiplier", num4);
+        
+        
+        AnimatorOverrideController overrideController = new AnimatorOverrideController(anim.runtimeAnimatorController);
+
+        var walkAnimationClip = Random.Range(0, walkAnimationClips.Length);
+
+        if (isAbberant)
+        {
+            overrideController["Run_Normal"] = runAnimationClips[Random.Range(0, runAnimationClips.Length)];
+            turnSpeed = 100f;
+            runSpeed *= num4;
+        }
+        else
+        {
+            overrideController["Run_Normal"] = walkAnimationClips[walkAnimationClip];
+            turnSpeed = 50f;
+            runSpeed = walkSpeed * num4;
+        }
+        
+        turnSpeed *= num4;
+        agent.angularSpeed = turnSpeed;
+        walkSpeed *= num4;
+        agent.speed = walkSpeed;
+        
+        overrideController["Walk"] = walkAnimationClips[walkAnimationClip];
+        
+        anim.runtimeAnimatorController = overrideController;
+        
+        
+        
+        
+        anim.SetBool(Walk, true);
+
+
+        fLookAnimator = titan.GetOrAddComponent<LookAnimator.FLookAnimator>();
+        fLookAnimator.FindHeadBone();
+        fLookAnimator.SetLookTarget(Player.local.head.transform);
+        fLookAnimator.enabled = false;
+        
+        
+        
+        titan.OnLimbDestroy += TitanOnOnLimbDestroy;
+        
         ChangeDestination();
     }
+
+    private void TitanOnOnLimbDestroy(TitanLimb limb)
+    {
+        Debug.Log($"Limb Destroyed of type {limb.type}");
+        if (limb.type == TitanLimb.LimbType.RightLeg || limb.type == TitanLimb.LimbType.LeftLeg)
+        {
+            StartCoroutine(LegDestroyRoutine());
+        }
+        else if(limb.type == TitanLimb.LimbType.Eye)
+        {
+            StartCoroutine(EyesDestroyRoutine());
+        }
+        
+    }
+
+
+    IEnumerator LegDestroyRoutine()
+    {
+        if (!isAnimationTriggerRunning)
+        {
+            kneeling = true;
+            anim.ResetTrigger(Kneel);
+            anim.SetTrigger(Kneel);
+
+            var previousSpeed = agent.speed;
+            var turnSpeed = agent.angularSpeed;
+
+            agent.speed = 0f;
+            agent.angularSpeed = 0f;
+            yield return new WaitForSeconds(6f);
+            agent.speed = previousSpeed;
+            agent.angularSpeed = turnSpeed;
+            yield return new WaitForSeconds(1f);
+            kneeling = false;
+        }
+
+    }
+
+    IEnumerator EyesDestroyRoutine()
+    {
+        if (!isAnimationTriggerRunning)
+        {
+            eyesDestroyed = true;
+            anim.ResetTrigger("EyesHit");
+            anim.SetTrigger("EyesHit");
+            var previousSpeed = agent.speed;
+            var turnSpeed = agent.angularSpeed;
+
+            agent.speed = 0f;
+            agent.angularSpeed = 0f;
+            yield return new WaitForSeconds(6f);
+            agent.speed = previousSpeed;
+            agent.angularSpeed = turnSpeed;
+
+        }
+    }
+    
+    
+    
 
     public override void Update()
     {
@@ -80,8 +213,10 @@ public class GenericTitanAI : AIBase
 
     void RoamingUpdate()
     {
-        if (!agent.hasPath ||
-            (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance))
+        var randomChange = Random.Range(0, 1000) == 777;
+        var agentBools = (!agent.hasPath ||
+                          (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance));
+        if (agentBools || randomChange)
         {
             ChangeDestination();
         }
@@ -166,7 +301,6 @@ public class GenericTitanAI : AIBase
                 titansChasingPlayer--;
             }
             
-            agent.speed = TitanSpawner.DeviatedRandom(8, 0.4f);
             agent.SetDestination(Player.currentCreature.transform.position);
 
         }
@@ -178,12 +312,25 @@ public class GenericTitanAI : AIBase
 
     public void SwitchBehaviourMode(AIBehaviourMode mode)
     {
-        if(mode == AIBehaviourMode.Chasing)
+        if (mode == AIBehaviourMode.Chasing)
+        {
+            agent.speed = runSpeed;
+            anim.SetBool(Idle, value: false);
+            anim.SetBool(Walk, value: false);
+            
+            fLookAnimator.enabled = true;
             titansChasingPlayer++;
-        
-        if(behaviourMode == AIBehaviourMode.Chasing && mode == AIBehaviourMode.Roaming)
+        }
+
+        if (behaviourMode == AIBehaviourMode.Chasing && mode == AIBehaviourMode.Roaming)
+        {
+            agent.speed = walkSpeed;
+            anim.SetBool(Idle, value: true);
+            anim.SetBool(Walk, value: true);
+            fLookAnimator.enabled = false;
             titansChasingPlayer--;
-        
+        }
+
         behaviourMode = mode;
 
     }

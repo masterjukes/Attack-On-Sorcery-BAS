@@ -37,6 +37,18 @@ public class ColossalTitan : PlayerTitanBase
 
     private static float lastSmokeTime = Time.time;
 
+    public override bool useXYThumbRotation => true;
+    
+    Vector3 _thumbRotationRight = new Vector3(0, 90, 70);
+    Vector3 _thumbRotationLeft = new Vector3(0, -90, -70);
+    
+    public override Vector3 thumbRotationLeft => _thumbRotationLeft;
+    public override Vector3 thumbRotationRight => _thumbRotationRight;
+    
+    /* R = 0, 90, 70 */
+    /* L = 0, -90, -70 */
+
+
     protected void CTExplosion()
     {
         PlaySound("CollTitanShiftExplosionAudio", Player.currentCreature.transform.position);

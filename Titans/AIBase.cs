@@ -49,13 +49,13 @@ public abstract class AIBase : MonoBehaviour
             var previousState = state;
             state = AIState.FullAI;
             framesPerTick = 10;
-            if (Vector3.Distance(transform.position, Player.local.transform.position) > 200)
+            if (Vector3.Distance(transform.position, Player.local.transform.position) > 600)
             {
                 framesPerTick = 30;
                 state = AIState.FakedMovement;
             }
 
-            if (Vector3.Distance(transform.position, Player.local.transform.position) > 500)
+            if (Vector3.Distance(transform.position, Player.local.transform.position) > 1250)
             {
                 framesPerTick = 100;
                 state = AIState.SlowFakedMovement;

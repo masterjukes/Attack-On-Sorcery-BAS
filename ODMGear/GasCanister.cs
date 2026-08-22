@@ -21,7 +21,7 @@ public class GasCanisterModule : ItemModule
 public class GasCanisterTracker : MonoBehaviour
 {
     float gasAmount;
-    float gasMax = 1000;
+    float gasMax = 250;
 
     void Start()
     {
