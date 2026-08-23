@@ -16,11 +16,8 @@ public class TitanTriggerAgro : MonoBehaviour
         if(attachedTitanAI.behaviourMode != GenericTitanAI.AIBehaviourMode.Roaming)
             return;
         
-        var playerColliders = Player.local.GetComponentsInChildren<Collider>();
-        if (!playerColliders.Contains(other))
-            return;
-
-        attachedTitanAI.SwitchBehaviourMode(GenericTitanAI.AIBehaviourMode.Chasing);
+        if(other.GetComponentInParent<Creature>())
+            attachedTitanAI.SwitchBehaviourMode(GenericTitanAI.AIBehaviourMode.Chasing);
 
     }
 }

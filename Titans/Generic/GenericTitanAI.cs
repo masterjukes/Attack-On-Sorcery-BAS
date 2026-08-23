@@ -1,4 +1,6 @@
 ﻿using System.Collections;
+using System.Collections.Generic;
+using BladeAndTitan.DebugHelpers;
 using BladeAndTitan.Titans.LookAnimator;
 using ThunderRoad;
 using UnityEngine;
@@ -12,7 +14,10 @@ public class GenericTitanAI : AIBase
     private static readonly int Kneel = Animator.StringToHash("Kneel");
     private static readonly int Idle = Animator.StringToHash("Idle");
     private static readonly int Walk = Animator.StringToHash("Walk");
+    private static readonly int PickUp = Animator.StringToHash("PickUp");
+    private static readonly int Jump = Animator.StringToHash("Jump");
 
+    private static List<Creature> grabbedCreatures = new List<Creature>();
 
     public enum AIBehaviourMode
     {
@@ -36,21 +41,27 @@ public class GenericTitanAI : AIBase
     
     private bool kneeling;
     private bool eyesDestroyed;
-
+    private bool pickingUp;
+    public bool grabbing;
 
     private bool isAbberant;
     
     public static AnimationClip[] walkAnimationClips;
     public static AnimationClip[] runAnimationClips;
-    
+    private static readonly int Eat = Animator.StringToHash("Eat");
+
+
     float turnSpeed = 50f;
     float walkSpeed = 5.5f;
     float runSpeed = 15f;
     
     FLookAnimator fLookAnimator;
+
+    private Transform leftGrabPos;
+    private Transform rightGrabPos;
     
     
-    bool isAnimationTriggerRunning => kneeling || eyesDestroyed;
+    bool isAnimationTriggerRunning => kneeling || eyesDestroyed || pickingUp;
 
     protected override void Start()
     {
@@ -117,6 +128,11 @@ public class GenericTitanAI : AIBase
         fLookAnimator.SetLookTarget(Player.local.head.transform);
         fLookAnimator.enabled = false;
         
+        leftGrabPos = transform.FindChildRecursive("LeftGrabPos");
+        rightGrabPos = transform.FindChildRecursive("RightGrabPos");
+
+        leftGrabPos.GetOrAddComponent<TitanGrabTrigger>();
+        rightGrabPos.GetOrAddComponent<TitanGrabTrigger>();
         
         
         titan.OnLimbDestroy += TitanOnOnLimbDestroy;
@@ -179,6 +195,125 @@ public class GenericTitanAI : AIBase
 
         }
     }
+
+    public IEnumerator PickUpRoutine()
+    {
+        if(!isAnimationTriggerRunning)
+        {
+            pickingUp = true;
+            anim.ResetTrigger(PickUp);
+            anim.SetTrigger(PickUp);
+            var previousSpeed = agent.speed;
+            agent.speed = 1f;
+            yield return new WaitForSeconds(3f);
+            agent.speed = previousSpeed;
+            pickingUp = false;
+        }
+    }
+    
+    public IEnumerator JumpRoutine()
+    {
+        if(!isAnimationTriggerRunning)
+        {
+            pickingUp = true;
+            anim.ResetTrigger(Jump);
+            anim.SetTrigger(Jump);
+            var previousSpeed = agent.speed;
+            agent.speed = 0f;
+            yield return new WaitForSeconds(3f);
+            foreach(Creature creature in Creature.InRadius(titan.transform.position, 2f))
+                TitanEatTrigger.AttemptKill(creature);
+            agent.speed = previousSpeed;
+            pickingUp = false;
+        }
+    }
+
+    public IEnumerator GrabRoutine(Creature creature, Side side)
+    {
+        if (grabbedCreatures.Contains(creature) || grabbing)
+        {
+            yield break;
+        }
+        grabbing = true;
+        
+        grabbedCreatures.Add(creature);
+        
+        anim.SetTrigger(Eat);
+        
+        var previousSpeed = agent.speed;
+        var prevTurnSpeed = agent.angularSpeed;
+        
+        agent.speed = 0f;
+        agent.angularSpeed = 0f;
+        
+        var grabPos = side == Side.Left ? leftGrabPos : rightGrabPos;
+
+
+        if(!creature.isPlayer)
+            creature.ragdoll.SetState(Ragdoll.State.Destabilized);
+
+        creature.ragdoll.SetColliders(false);
+
+        
+        while (creature.transform.position != grabPos.position)
+        {
+            var expectedPosition = Vector3.MoveTowards(creature.transform.position, grabPos.position, 35f * Time.deltaTime);
+
+            if (creature.isPlayer)
+                Player.local.Teleport(expectedPosition, Player.local.transform.rotation, false, false);
+            else
+                creature.Teleport(expectedPosition,creature.transform.rotation);
+            
+            if(Vector3.Distance(creature.transform.position, grabPos.position) < 0.5f)
+                break;
+            
+            
+            yield return Yielders.FixedUpdate;
+        }
+        
+        
+        
+        
+        while (grabbedCreatures.Contains(creature) && !creature.isKilled)
+        {
+            var titanPart = titan.GetPart(TitanLimb.LimbType.RightArm);
+            if(side == Side.Left)
+                titanPart = titan.GetPart(TitanLimb.LimbType.LeftArm);
+
+            if (titanPart.isDisabled || Random.Range(0, 7000) == 3333)
+                break;
+
+            
+            if(creature.isPlayer)
+                Player.local.Teleport(grabPos.position, Player.local.transform.rotation, false, false);
+            else
+            {
+                creature.RootPhysicBody.velocity = Vector3.zero;
+                creature.transform.position = grabPos.position;
+
+            }
+
+            
+            yield return Yielders.FixedUpdate;
+
+        }
+        
+        Debug.Log("Escaped Grab");
+        
+        agent.speed = previousSpeed;
+        agent.angularSpeed = prevTurnSpeed;
+
+        creature.ragdoll.SetColliders(true);
+        grabbedCreatures.Remove(creature);
+
+        yield return Yielders.ForSeconds(5f);
+
+        grabPos.GetComponent<TitanGrabTrigger>().enabled = true;
+        grabbing = false;
+
+        
+    }
+    
     
     
     
@@ -300,8 +435,24 @@ public class GenericTitanAI : AIBase
                 SwitchBehaviourMode(AIBehaviourMode.Roaming);
                 titansChasingPlayer--;
             }
+
+            Creature nearestCreature = null;
             
-            agent.SetDestination(Player.currentCreature.transform.position);
+            foreach (var creature in Creature.allActive)
+            {
+                if(creature.isKilled)
+                    continue;
+                
+                if(nearestCreature == null)
+                    nearestCreature = creature;
+                
+                if(Vector3.Distance(titan.transform.position, creature.transform.position) > Vector3.Distance(titan.transform.position, nearestCreature.transform.position))
+                    nearestCreature = creature;
+                
+            }
+
+            fLookAnimator.SetLookTarget(nearestCreature.transform);
+            agent.SetDestination(nearestCreature.transform.position);
 
         }
 
@@ -335,4 +486,6 @@ public class GenericTitanAI : AIBase
 
     }
 
+
+    
 }

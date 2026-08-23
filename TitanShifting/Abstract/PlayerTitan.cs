@@ -4,6 +4,7 @@ using IngameDebugConsole;
 using RootMotion.FinalIK;
 using ThunderRoad;
 using UnityEngine;
+using UnityEngine.SpatialTracking;
 using static ThunderRoad.Yielders;
 using Object = UnityEngine.Object;
 
@@ -93,6 +94,8 @@ namespace BladeAndTitan.TitanShifting.Abstract
                 #if !DEBUG
                 return;
                 #endif
+            
+            Debug.Log($"{Player.local.handRight.link.attachedPhysicBody}     {Player.local.handRight.link.playerJoint.connectedBody.name}");
 
             if (gripping && !isTitan)
             {
@@ -201,7 +204,7 @@ namespace BladeAndTitan.TitanShifting.Abstract
             ConfigureLocomotion(vrik, height);
 
             Scale(height);
-
+            
             Player.currentCreature.renderers.ForEach(r => r.renderer.enabled = false);
             titanObject.transform.SetParent(Player.local.transform, true);
 
@@ -244,19 +247,23 @@ namespace BladeAndTitan.TitanShifting.Abstract
         {
             return CreateTarget(
                 RightHandTargetName,
-                Player.local.handRight.root,
-                Vector3.zero,
-                TitanHandRightRotation
+                Player.local.handRight.transform,
+                new Vector3(0.03f, -0.02f, -0.09f),
+                Quaternion.Euler(TitanHandRightRotation.eulerAngles + new Quaternion(0.10280f, 0.67510f, 0.14981f, 0.71500f).eulerAngles)
             );
         }
+        
+        // INFO B.T.Abstract.PlayerTitanBase.UpdateCaster       : Right Hand: pos (0.03, -0.02, -0.09), rot (0.10280, 0.67510, 0.14981, 0.71500)
+            
+        // INFO B.T.Abstract.PlayerTitanBase.UpdateCaster       : Left Hand: pos (-0.03, -0.02, -0.09), rot (0.67510, 0.10280, -0.71500, -0.14982)
 
         private Transform CreateLeftHandTarget()
         {
             return CreateTarget(
                 LeftHandTargetName,
                 Player.local.handLeft.transform,
-                Vector3.zero,
-                TitanHandLeftRotation
+                new Vector3(-0.03f, -0.02f, -0.09f),
+                Quaternion.Euler(TitanHandLeftRotation.eulerAngles + new Quaternion(0.67510f, 0.10280f, -0.71500f, -0.14982f).eulerAngles)
             );
         }
 
@@ -409,7 +416,11 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
             Player.currentCreature.ragdoll.SetColliders(false);
             Player.local.airHelper.minHeight = 1 * Player.local.transform.localScale.x;
+            //Player.local.airHelper.OnAirEvent += creature => GameManager.local.StartCoroutine(ReconfigureJoints());
+            
+            
         }
+        
 
         private void UnScale()
         {
@@ -446,7 +457,13 @@ namespace BladeAndTitan.TitanShifting.Abstract
         public override void UpdateCaster()
         {
             base.UpdateCaster();
+            
+            
+            // INFO B.T.Abstract.PlayerTitanBase.UpdateCaster       : Right Hand: pos (0.03, -0.02, -0.09), rot (0.10280, 0.67510, 0.14981, 0.71500)
+            
+            // INFO B.T.Abstract.PlayerTitanBase.UpdateCaster       : Left Hand: pos (-0.03, -0.02, -0.09), rot (0.67510, 0.10280, -0.71500, -0.14982)
 
+            
             if (!isTitan)
                 return;
 

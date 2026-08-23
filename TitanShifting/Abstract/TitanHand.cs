@@ -46,7 +46,14 @@ namespace BladeAndTitan.TitanShifting.Abstract
         Transform middle;
         Transform ring;
         Transform pinky;
+        
+        Transform thumbMain;
+        Transform indexMain;
+        Transform middleMain;
+        Transform ringMain;
+        Transform pinkyMain;
 
+        private Quaternion thumbOffset;
 
         public float controllerMass = 2.5f;
         public float positionSpring = 1100f;
@@ -219,6 +226,29 @@ namespace BladeAndTitan.TitanShifting.Abstract
             pinky = transform.FindChildRecursive(pinkyParentName);
             if(pinky == null)
                 Debug.LogError($"TitanHand {name} was given a null pinky.");
+            
+            
+            Transform offset = side == Side.Left
+                ? Player.local.transform.Find("Offset/LeftHand")
+                : Player.local.transform.Find("Offset/RightHand");
+            
+            
+            indexMain = offset.FindChildRecursive("IndexProximal");
+            middleMain = offset.FindChildRecursive("MiddleProximal");
+            ringMain = offset.FindChildRecursive("RingProximal");
+            pinkyMain = offset.FindChildRecursive("LittleProximal");
+            thumbMain = offset.FindChildRecursive("ThumbProximal");
+            
+            Quaternion sourceRest =
+                Quaternion.Euler(131.4f, -107.489f, -74.70502f);
+
+            Quaternion targetRest =
+                Quaternion.Euler(22.43f, -14.752f, -35.861f);
+
+            thumbOffset =
+                targetRest * Quaternion.Inverse(sourceRest);
+            
+            
         }
 
 
@@ -232,9 +262,12 @@ namespace BladeAndTitan.TitanShifting.Abstract
             UpdateFingers();
         }
 
-
+        
+        
         void UpdateFingers()
         {
+            
+            
             Transform offset = side == Side.Left
                 ? Player.local.transform.Find("Offset/LeftHand")
                 : Player.local.transform.Find("Offset/RightHand");
@@ -270,7 +303,6 @@ namespace BladeAndTitan.TitanShifting.Abstract
             // ===== PROXIMAL =====
 
             thumb.localRotation = SwapThumb(thumbMain.localRotation);
-                
             index.localRotation = SwapXY(indexMain.localRotation);
             middle.localRotation = SwapXY(middleMain.localRotation);
             ring.localRotation = SwapXY(ringMain.localRotation);
@@ -280,8 +312,8 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
             // ===== INTERMEDIATE =====
 
+            
             thumb.GetChild(0).localRotation = SwapThumb(thumbMain.GetChild(0).localRotation);
-                
             index.GetChild(0).localRotation = SwapXY(indexMain.GetChild(0).localRotation);
             middle.GetChild(0).localRotation = SwapXY(middleMain.GetChild(0).localRotation);
             ring.GetChild(0).localRotation = SwapXY(ringMain.GetChild(0).localRotation);
@@ -290,21 +322,19 @@ namespace BladeAndTitan.TitanShifting.Abstract
             // ===== DISTAL =====
 
             thumb.GetChild(0).GetChild(0).localRotation = SwapThumb(thumbMain.GetChild(0).GetChild(0).localRotation);
-            
             index.GetChild(0).GetChild(0).localRotation = SwapXY(indexMain.GetChild(0).GetChild(0).localRotation);
             middle.GetChild(0).GetChild(0).localRotation = SwapXY(middleMain.GetChild(0).GetChild(0).localRotation);
             ring.GetChild(0).GetChild(0).localRotation = SwapXY(ringMain.GetChild(0).GetChild(0).localRotation);
             pinky.GetChild(0).GetChild(0).localRotation = SwapXY(pinkyMain.GetChild(0).GetChild(0).localRotation);
             
+                
             thumb.Rotate(thumbXRot, thumbYRot, thumnZRot);
-            
-            
-            
             
             if(side == Side.Right)
                 thumb.GetChild(0).GetChild(0).Rotate(0,45,0);
             else
                 thumb.GetChild(0).GetChild(0).Rotate(0,-45,0);
+            
             
         }
 

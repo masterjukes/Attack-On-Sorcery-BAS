@@ -203,6 +203,11 @@ public class TitanSpawner : ThunderScript
         titanMesh.SetBlendShapeWeight(2, Random.Range(0, 100));
         
         titanMesh.materials[0].color = Color.HSVToRGB(0.11f, (float)Random.Range(0, 70) / 100f, (float)Random.Range(0, 80) / 100f);
+
+        var smc = o.AddComponent<RASCALSkinnedMeshCollider>();
+        smc.ProcessMesh();
+        smc.ImmediateUpdateColliders(true);
+        
         
         PlayAudio("TitanSpawn", o.GetComponent<AudioSource>());
 

@@ -159,6 +159,7 @@
         <Compile Include="Titans\Generic\GenericTitanAI.cs" />
         <Compile Include="Titans\Generic\Titan.cs" />
         <Compile Include="Titans\Generic\TitanEatTrigger.cs" />
+        <Compile Include="Titans\Generic\TitanGrabTrigger.cs" />
         <Compile Include="Titans\Generic\TitanLimb.cs" />
         <Compile Include="Titans\Generic\TitanPickUpTrigger.cs" />
         <Compile Include="Titans\Generic\TitanTriggerAgro.cs" />

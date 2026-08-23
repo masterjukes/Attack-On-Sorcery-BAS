@@ -22,8 +22,9 @@ public class AttackTitan : PlayerTitanBase
 
     public override string stepSoundId => "CollTitanStepAudio";
     
-    protected override Quaternion TitanHandLeftRotation => Quaternion.Euler(0, 90, 90);
-    protected override Quaternion TitanHandRightRotation => Quaternion.Euler(0, -90, -90);
+    protected override Quaternion TitanHandLeftRotation => Quaternion.Euler(0, 180, 315);
+    protected override Quaternion TitanHandRightRotation => Quaternion.Euler(0, 180, 225); 
+
     protected override Quaternion TitanHeadRotation => Quaternion.Euler(0, 0, 0);
     
     Vector3 _thumbRotationRight = new Vector3(0, 0, 90);

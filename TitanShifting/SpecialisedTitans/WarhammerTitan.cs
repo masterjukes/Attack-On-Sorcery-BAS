@@ -24,9 +24,9 @@ public class WarhammerTitan : PlayerTitanBase
     
     public override bool useXYThumbRotation => false;
 
-    
-    protected override Quaternion TitanHandLeftRotation => Quaternion.Euler(0, 90, 90);
-    protected override Quaternion TitanHandRightRotation => Quaternion.Euler(0, -90, -90);
+    protected override Quaternion TitanHandLeftRotation => Quaternion.Euler(0, 180, 315);
+    protected override Quaternion TitanHandRightRotation => Quaternion.Euler(0, 180, 225); 
+
     protected override Quaternion TitanHeadRotation => Quaternion.Euler(0, 0, 0);
 
     Vector3 _thumbRotationRight = new Vector3(0, 0, 90);
@@ -45,6 +45,14 @@ public class WarhammerTitan : PlayerTitanBase
     private static readonly int SpikesForward = Animator.StringToHash("SpikesForward");
     private static readonly int SpikesCircle = Animator.StringToHash("SpikesCircle");
     
+    
+    public float cooldown = 0f;
+    public float velocityThreshold = 1.5f;
+    public float angleThreshold = 40f;
+
+    private float leftLastTriggerTime = -Mathf.Infinity;
+    private float rightLastTriggerTime = -Mathf.Infinity;
+    
 
     protected override void OnTitanPossess()
     {
@@ -57,34 +65,48 @@ public class WarhammerTitan : PlayerTitanBase
     {
         base.Throw(velocity);
 
-        Vector3 direction = velocity.normalized;
+        bool isRightHand = spellCaster.side == Side.Right;
+        float lastTriggerTime = isRightHand
+            ? rightLastTriggerTime
+            : leftLastTriggerTime;
 
-        bool palmFacingForward =
-            Vector3.Dot(spellCaster.ragdollHand.PalmDir, Player.local.transform.forward) > 0.8f;
-        
-        bool palmFacingUp = Vector3.Dot(spellCaster.ragdollHand.PalmDir, Vector3.up) > 0.8f;
+        if (Time.time - lastTriggerTime <= cooldown || AnimatorIsPlaying())
+            return;
 
-        bool thrownForward =
-            Vector3.Dot(direction, Player.local.transform.forward) > 0.8f;
+        float speed = velocity.magnitude;
 
-        bool thrownUp =
-            Vector3.Dot(direction, Vector3.up) > 0.8f;
+        var hand = spellCaster.ragdollHand;
+        var cameraTransform = Player.local.head.cam.transform;
+        var flingDirection = velocity.normalized;
 
-        if (palmFacingForward && thrownForward)
+        bool IsGesture(Vector3 targetDirection)
+        {
+            return Vector3.Angle(targetDirection, flingDirection) < angleThreshold &&
+                   Vector3.Dot(hand.PalmDir.normalized, targetDirection) > 0.5f;
+        }
+
+        // Forward fling, palm facing forward
+        if (IsGesture(cameraTransform.forward))
         {
             CastAbility(SpikesForward);
         }
-        else if (thrownUp && palmFacingUp)
+        // Upward fling, palm facing up
+        else if (IsGesture(cameraTransform.up))
         {
-            if (velocity.magnitude > 10f)
-            {
+            if (speed > 5f)
                 CastAbility(SpikesAoE);
-            }
             else
-            {
                 CastAbility(SpikesCircle);
-            }
         }
+        else
+        {
+            return;
+        }
+
+        if (isRightHand)
+            rightLastTriggerTime = Time.time;
+        else
+            leftLastTriggerTime = Time.time;
     }
 
 
@@ -111,7 +133,7 @@ public class WarhammerTitan : PlayerTitanBase
 
         var vrik = o.GetComponent<VRIK>();
 
-        const float stretch = 0.5f;
+        const float stretch = 0.2f;
         
         vrik.solver.leftArm.stretchCurve = new AnimationCurve(
             new Keyframe(0f, 0f),
@@ -137,16 +159,48 @@ public class WarhammerTitan : PlayerTitanBase
 
     void CastAbility(int hash)
     {
-        if(AnimatorIsPlaying()) return;
-        spikeAnimator.Play(hash);
+        if (AnimatorIsPlaying()) return;
+        spikeAnimator.transform.parent = titan.transform;
+        spikeAnimator.transform.localPosition = Vector3.zero;
+        spikeAnimator.transform.localRotation = Quaternion.identity;
+        spikeAnimator.transform.parent = null;
+
+        foreach (Transform child in spikeAnimator.transform)
+        {
+            if (Physics.Raycast(child.position, Vector3.down, out RaycastHit hit, 40f))
+            {
+                child.position = hit.point;
+            }
+        }
+
+        if (hash == SpikesAoE)
+        {
+            ColossalTitan.ApplyExplosionForce(10f, spikeAnimator.transform.position, 70f);
+        }
+        else if (hash == SpikesForward)
+        {
+            ColossalTitan.ApplyExplosionForce(5f, spikeAnimator.transform.position, 40f);
+        }
+        else if (hash == SpikesCircle)
+        {
+            ColossalTitan.ApplyExplosionForce(3f, spikeAnimator.transform.position, 30f);
+        }
+
+
+    spikeAnimator.Play(hash);
         PlaySound("ElectricWarhammerAudio", spellCaster.transform.position);
         PlaySound("SpikeCreationWarhammer", spellCaster.transform.position);
         electricEffect.Play();
     }
     
-    static bool AnimatorIsPlaying(){
-        return spikeAnimator.GetCurrentAnimatorStateInfo(0).length >
-               spikeAnimator.GetCurrentAnimatorStateInfo(0).normalizedTime;
+    bool AnimatorIsPlaying()
+    {
+        var state = spikeAnimator.GetCurrentAnimatorStateInfo(0);
+
+        return (state.shortNameHash == SpikesAoE ||
+                state.shortNameHash == SpikesForward ||
+                state.shortNameHash == SpikesCircle)
+               && state.normalizedTime < 1f;
     }
     
 }

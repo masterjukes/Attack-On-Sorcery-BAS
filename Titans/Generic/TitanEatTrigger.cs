@@ -15,10 +15,23 @@ public class TitanEatTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (other.GetComponentInParent<Player>() != null && !titan.jawDisabled && !titan.eyesDisabled)
+        if (other.GetComponentInParent<Creature>() != null && !titan.jawDisabled && !titan.eyesDisabled)
         {
-            if(!TitanShifting.Abstract.PlayerTitanBase.isTitan && Player.invincibility == false)
-                Player.currentCreature.Kill();
+            AttemptKill(other.GetComponentInParent<Creature>());
         }
+    }
+
+
+    public static void AttemptKill(Creature creature)
+    {
+
+        if (!creature.isPlayer)
+        {
+            creature.Kill();
+            return;
+        }
+
+        if(!TitanShifting.Abstract.PlayerTitanBase.isTitan && Player.invincibility == false)
+            Player.currentCreature.Kill();
     }
 }

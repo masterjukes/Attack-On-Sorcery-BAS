@@ -36,6 +36,10 @@ public class ColossalTitan : PlayerTitanBase
     private static float lastCastR = float.MaxValue;
 
     private static float lastSmokeTime = Time.time;
+    
+    protected override Quaternion TitanHandLeftRotation => Quaternion.Euler(180, 180, 90);
+    protected override Quaternion TitanHandRightRotation => Quaternion.Euler(180, 180, 90);
+    protected override Quaternion TitanHeadRotation => Quaternion.Euler(0, -90, -90);
 
     public override bool useXYThumbRotation => true;
     
@@ -171,7 +175,7 @@ public class ColossalTitan : PlayerTitanBase
         
     }
     
-    public void ApplyExplosionForce(float radius, Vector3 explosionPosition, float force)
+    public static void ApplyExplosionForce(float radius, Vector3 explosionPosition, float force)
     {
         Collider[] colliders = Physics.OverlapSphere(explosionPosition, radius, ~0, QueryTriggerInteraction.Ignore);
 
@@ -221,9 +225,7 @@ public class ColossalTitan : PlayerTitanBase
         }
     }
 
-    protected override Quaternion TitanHandLeftRotation => Quaternion.Euler(0, -90, 90);
-    protected override Quaternion TitanHandRightRotation => Quaternion.Euler(0, 90, -90);
-    protected override Quaternion TitanHeadRotation => Quaternion.Euler(0, -90, -90);
+
 
     protected override void OnShift()
     {
@@ -245,6 +247,7 @@ public class ColossalTitan : PlayerTitanBase
 
         leftFoot.GetOrAddComponent<TitanFootCollider>();
         rightFoot.GetOrAddComponent<TitanFootCollider>();
+        
         
     }
 
