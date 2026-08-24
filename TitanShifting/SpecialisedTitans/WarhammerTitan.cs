@@ -46,12 +46,8 @@ public class WarhammerTitan : PlayerTitanBase
     private static readonly int SpikesCircle = Animator.StringToHash("SpikesCircle");
     
     
-    public float cooldown = 0f;
-    public float velocityThreshold = 1.5f;
     public float angleThreshold = 40f;
-
-    private float leftLastTriggerTime = -Mathf.Infinity;
-    private float rightLastTriggerTime = -Mathf.Infinity;
+    
     
 
     protected override void OnTitanPossess()
@@ -64,13 +60,7 @@ public class WarhammerTitan : PlayerTitanBase
     public override void Throw(Vector3 velocity)
     {
         base.Throw(velocity);
-
-        bool isRightHand = spellCaster.side == Side.Right;
-        float lastTriggerTime = isRightHand
-            ? rightLastTriggerTime
-            : leftLastTriggerTime;
-
-        if (Time.time - lastTriggerTime <= cooldown || AnimatorIsPlaying())
+        if (AnimatorIsPlaying())
             return;
 
         float speed = velocity.magnitude;
@@ -86,14 +76,14 @@ public class WarhammerTitan : PlayerTitanBase
         }
 
         // Forward fling, palm facing forward
-        if (IsGesture(cameraTransform.forward))
+        if (IsGesture(cameraTransform.forward) || IsGesture(Player.currentCreature.transform.forward))
         {
             CastAbility(SpikesForward);
         }
         // Upward fling, palm facing up
-        else if (IsGesture(cameraTransform.up))
+        else if (IsGesture(Vector3.up))
         {
-            if (speed > 5f)
+            if (speed > 3f)
                 CastAbility(SpikesAoE);
             else
                 CastAbility(SpikesCircle);
@@ -102,11 +92,7 @@ public class WarhammerTitan : PlayerTitanBase
         {
             return;
         }
-
-        if (isRightHand)
-            rightLastTriggerTime = Time.time;
-        else
-            leftLastTriggerTime = Time.time;
+        
     }
 
 
@@ -175,15 +161,15 @@ public class WarhammerTitan : PlayerTitanBase
 
         if (hash == SpikesAoE)
         {
-            ColossalTitan.ApplyExplosionForce(10f, spikeAnimator.transform.position, 70f);
+            ColossalTitan.ApplyExplosionForce(15f, spikeAnimator.transform.position, 100f);
         }
         else if (hash == SpikesForward)
         {
-            ColossalTitan.ApplyExplosionForce(5f, spikeAnimator.transform.position, 40f);
+            ColossalTitan.ApplyExplosionForce(9f, spikeAnimator.transform.position, 70f);
         }
         else if (hash == SpikesCircle)
         {
-            ColossalTitan.ApplyExplosionForce(3f, spikeAnimator.transform.position, 30f);
+            ColossalTitan.ApplyExplosionForce(7f, spikeAnimator.transform.position, 60f);
         }
 
 

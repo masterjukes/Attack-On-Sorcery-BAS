@@ -16,7 +16,7 @@ public class TitanSpawner : ThunderScript
     public static TitanSpawner instance;
     private Texture2D[] titanFaces;
     public int activeTitanCount;
-    int allowedTitanCount = 50;
+    int allowedTitanCount = 20;
     float spawnRadius = 400f;
     float spawnTick = 20f;
     float spawnMinDistance = 20f;
@@ -24,6 +24,8 @@ public class TitanSpawner : ThunderScript
     float lastSpawnTime;
 
     private float titanHeight;
+    
+    static PhysicMaterial fleshMaterial;
     
     bool canSpawn;
 
@@ -204,9 +206,54 @@ public class TitanSpawner : ThunderScript
         
         titanMesh.materials[0].color = Color.HSVToRGB(0.11f, (float)Random.Range(0, 70) / 100f, (float)Random.Range(0, 80) / 100f);
 
+        
+        
         var smc = o.AddComponent<RASCALSkinnedMeshCollider>();
-        smc.ProcessMesh();
-        smc.ImmediateUpdateColliders(true);
+        smc.convexMeshColliders = true;
+        smc.excludedBones.Add(o.transform.FindChildRecursive("mixamorig:LeftHand"));
+        smc.excludedBones.Add(o.transform.FindChildRecursive("mixamorig:RightHand"));
+        foreach (var bone in o.transform.FindChildRecursive("mixamorig:LeftHand").GetComponentsInChildren<Transform>())
+        {
+            
+            smc.excludedBones.Add(bone);
+            if (bone.childCount > 0)
+            {
+                smc.excludedBones.Add(bone.GetChild(0));
+                if(bone.GetChild(0).childCount > 0)
+                    smc.excludedBones.Add(bone.GetChild(0).GetChild(0));
+            }
+        }
+
+        foreach (var bone in o.transform.FindChildRecursive("mixamorig:RightHand").GetComponentsInChildren<Transform>())
+        {
+            smc.excludedBones.Add(bone);
+            if (bone.childCount > 0)
+            {
+                smc.excludedBones.Add(bone.GetChild(0));
+                if(bone.GetChild(0).childCount > 0)
+                    smc.excludedBones.Add(bone.GetChild(0).GetChild(0));
+            }
+        }
+        
+        
+        if (fleshMaterial == null)
+        {
+            Catalog.LoadAssetAsync<PhysicMaterial>("PhysicsMaterialFlesh", material =>
+            {
+                material.name = "Flesh";
+                fleshMaterial = material;
+                smc.physicsMaterial = fleshMaterial;
+                smc.ProcessMesh();
+                smc.ImmediateUpdateColliders(true);
+            }, "PhysicsMaterialFlesh");
+        }
+        else
+        {
+            smc.physicsMaterial = fleshMaterial;
+            smc.ProcessMesh();
+            smc.ImmediateUpdateColliders(true);
+        }
+        
         
         
         PlayAudio("TitanSpawn", o.GetComponent<AudioSource>());

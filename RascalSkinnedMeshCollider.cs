@@ -282,18 +282,24 @@ namespace BladeAndTitan
             {
                 var skinMat = parentBone.srcSkin.sharedMaterials[skinnedMeshMaterialIndex];
                 var physicsMaterialAssociation = host.materialAssociationList.Find(m => m.material == skinMat);
+
                 if (physicsMaterialAssociation != null)
                     meshCol.sharedMaterial = physicsMaterialAssociation.physicsMaterial;
+
                 if ((bool)parentBone.materialProperties &&
                     (!meshCol.sharedMaterial || parentBone.materialProperties.overrideOthers))
                     meshCol.sharedMaterial = parentBone.materialProperties.physicsMaterial;
-                if ((bool)parentBone.parentSkinfo.materialProperties && (!meshCol.sharedMaterial ||
-                                                                         parentBone.parentSkinfo.materialProperties
-                                                                             .overrideOthers))
+
+                if ((bool)parentBone.parentSkinfo.materialProperties &&
+                    (!meshCol.sharedMaterial ||
+                     parentBone.parentSkinfo.materialProperties.overrideOthers))
                     meshCol.sharedMaterial = parentBone.parentSkinfo.materialProperties.physicsMaterial;
+
                 if ((bool)parentBone.materialProperties && parentBone.materialProperties.overrideOthers)
                     meshCol.sharedMaterial = parentBone.materialProperties.physicsMaterial;
-                if (!meshCol.sharedMaterial) meshCol.sharedMaterial = host.physicsMaterial;
+
+                if (!meshCol.sharedMaterial)
+                    meshCol.sharedMaterial = host.physicsMaterial;
             }
 
             public void SetTris(IEnumerable<int> inTriList)

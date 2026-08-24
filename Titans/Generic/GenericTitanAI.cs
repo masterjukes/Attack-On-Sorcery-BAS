@@ -1,11 +1,12 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
-using BladeAndTitan.DebugHelpers;
 using BladeAndTitan.Titans.LookAnimator;
+using BladeAndTitan.TitanShifting.Abstract;
 using ThunderRoad;
 using UnityEngine;
 using UnityEngine.AI;
 using UnityEngine.Animations;
+using TransformExtensions = BladeAndTitan.DebugHelpers.TransformExtensions;
 
 namespace BladeAndTitan.Titans.Generic;
 
@@ -128,8 +129,8 @@ public class GenericTitanAI : AIBase
         fLookAnimator.SetLookTarget(Player.local.head.transform);
         fLookAnimator.enabled = false;
         
-        leftGrabPos = transform.FindChildRecursive("LeftGrabPos");
-        rightGrabPos = transform.FindChildRecursive("RightGrabPos");
+        leftGrabPos = TransformExtensions.FindChildRecursive(transform, "LeftGrabPos");
+        rightGrabPos = TransformExtensions.FindChildRecursive(transform, "RightGrabPos");
 
         leftGrabPos.GetOrAddComponent<TitanGrabTrigger>();
         rightGrabPos.GetOrAddComponent<TitanGrabTrigger>();
@@ -253,26 +254,6 @@ public class GenericTitanAI : AIBase
             creature.ragdoll.SetState(Ragdoll.State.Destabilized);
 
         creature.ragdoll.SetColliders(false);
-
-        
-        while (creature.transform.position != grabPos.position)
-        {
-            var expectedPosition = Vector3.MoveTowards(creature.transform.position, grabPos.position, 35f * Time.deltaTime);
-
-            if (creature.isPlayer)
-                Player.local.Teleport(expectedPosition, Player.local.transform.rotation, false, false);
-            else
-                creature.Teleport(expectedPosition,creature.transform.rotation);
-            
-            if(Vector3.Distance(creature.transform.position, grabPos.position) < 0.5f)
-                break;
-            
-            
-            yield return Yielders.FixedUpdate;
-        }
-        
-        
-        
         
         while (grabbedCreatures.Contains(creature) && !creature.isKilled)
         {
@@ -283,6 +264,9 @@ public class GenericTitanAI : AIBase
             if (titanPart.isDisabled || Random.Range(0, 7000) == 3333)
                 break;
 
+            if(PlayerTitanBase.isTitan)
+                break;
+            
             
             if(creature.isPlayer)
                 Player.local.Teleport(grabPos.position, Player.local.transform.rotation, false, false);

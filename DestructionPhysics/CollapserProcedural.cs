@@ -70,6 +70,29 @@ namespace BladeAndTitan.DestructionPhysics
             }, "HouseMaterial");
 
         }
+        
+        static void SetShardBlack(GameObject shard)
+        {
+            var renderer = shard.GetComponent<Renderer>();
+            if (renderer == null) return;
+
+            var block = new MaterialPropertyBlock();
+
+            for (int i = 0; i < renderer.sharedMaterials.Length; i++)
+            {
+                var material = renderer.sharedMaterials[i];
+                int colorProperty = material.HasProperty("_BaseColor")
+                    ? Shader.PropertyToID("_BaseColor")
+                    : Shader.PropertyToID("_Color");
+
+                if (!material.HasProperty(colorProperty)) continue;
+
+                block.Clear();
+                renderer.GetPropertyBlock(block, i);
+                block.SetColor(colorProperty, Color.black);
+                renderer.SetPropertyBlock(block, i);
+            }
+        }
 
         public override void Collapse(float radius, Vector3 explosionPosition, float force)
         {
@@ -84,33 +107,12 @@ namespace BladeAndTitan.DestructionPhysics
             if (distance < 30f && force > 100f)
             {
                 GameObject.Destroy(gameObject);
+                return;
             }
             
+            
+            bool scorched = distance < 75f && force > 100f;
 
-            if (distance < 75f && force > 100f)
-            {
-                GetComponent<Renderer>().material.color = Color.black;
-                sliceMaterial.color = Color.black;
-            }
-
-            ClearDebrisObjectsOfNull();
-
-            if (debrisObjects.Count >= maxDebrisObjects)
-            {
-                if (maxDebrisObjects == 0)
-                {
-                    GameObject.Destroy(gameObject);
-                    return;
-                }
-                
-                for (int i = 0; i < debrisObjects.Count; i++)
-                {
-                    GameObject.Destroy(debrisObjects[0]);
-                }
-
-                debrisObjects.RemoveRange(0, (int) Mathf.Pow(2, maxSlicesPerHouse));
-                
-            }
             
             
             if (GetCachedSliceCount(meshNode) != (int) Mathf.Pow(2, maxSlicesPerHouse)  || !InstatiateCachedSlices(meshNode))
@@ -118,10 +120,14 @@ namespace BladeAndTitan.DestructionPhysics
                 Fragment(meshNode, maxSlicesPerHouse);
                 CacheSlice(sliceParts.ToArray(), meshNode);
             }
+            
+            MakeRoomForNewDebris();
 
             foreach (var slices in sliceParts)
             {
-
+                if (scorched)
+                    SetShardBlack(slices);
+                
                 debrisObjects.Add(slices);
                 var random = Random.Range(30, 120);  
                 Destroy(slices, random);
@@ -140,6 +146,34 @@ namespace BladeAndTitan.DestructionPhysics
             Instantiate(collapseVfxPrefab, transform.position, Quaternion.Euler(-90, 0, 0));
             
         }
+        
+        void MakeRoomForNewDebris()
+        {
+            ClearDebrisObjectsOfNull();
+
+            int limit = Mathf.Max(0, maxDebrisObjects);
+            int excess = Mathf.Max(0, debrisObjects.Count + sliceParts.Count - limit);
+            int removeExisting = Mathf.Min(excess, debrisObjects.Count);
+
+            for (int i = 0; i < removeExisting; i++)
+            {
+                Destroy(debrisObjects[i]);
+            }
+
+            debrisObjects.RemoveRange(0, removeExisting);
+            excess -= removeExisting;
+
+            // A single collapse can itself exceed the cap.
+            for (int i = 0; i < excess; i++)
+            {
+                Destroy(sliceParts[i]);
+            }
+
+            if (excess > 0)
+            {
+                sliceParts.RemoveRange(0, excess);
+            }
+        }
 
         void ClearDebrisObjectsOfNull()
         {
@@ -151,26 +185,31 @@ namespace BladeAndTitan.DestructionPhysics
             List<SliceInfo> sliceInfoCache = new();
             foreach (var sliceMesh in slicedMeshes)
             {
+                var cachedSlice = Instantiate(sliceMesh);
+                cachedSlice.SetActive(false);
+
                 sliceInfoCache.Add(new SliceInfo
                 {
-                    sliceMesh = Object.Instantiate(
-                        sliceMesh
-                    ),
-
-                    positionOffset =
-                        sliceMesh.transform.position -
-                        originalMesh.transform.position,
-
-                    rotation =
-                        Quaternion.Inverse(originalMesh.transform.rotation) *
-                        sliceMesh.transform.rotation
+                    sliceMesh = cachedSlice,
+                    positionOffset = sliceMesh.transform.position - originalMesh.transform.position,
+                    rotation = Quaternion.Inverse(originalMesh.transform.rotation) *
+                               sliceMesh.transform.rotation
                 });
-                
+                ;
             }
             
             
             string key = originalMesh.GetComponent<MeshFilter>().sharedMesh.name;
 
+
+            if (destructionCache.TryGetValue(key, out var oldSlices))
+            {
+                foreach (var oldSlice in oldSlices)
+                {
+                    if (oldSlice.sliceMesh != null)
+                        Destroy(oldSlice.sliceMesh);
+                }
+            }
 
             destructionCache[key] = sliceInfoCache.ToArray();
         }
@@ -205,7 +244,8 @@ namespace BladeAndTitan.DestructionPhysics
 
                 newObject.transform.rotation =
                     replacementObject.transform.rotation * info.rotation;
-                
+
+                newObject.SetActive(true);
                 sliceParts.Add(newObject);
                 
             }
