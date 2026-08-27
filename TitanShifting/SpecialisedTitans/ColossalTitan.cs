@@ -256,6 +256,9 @@ public class ColossalTitan : PlayerTitanBase
         base.OnLeftFootstep();
         foreach (var creature in leftFoot.GetComponent<TitanFootCollider>().creatures)
         {
+            if(creature?.isPlayer != null && (bool)creature?.isPlayer)
+                continue;
+            
             creature?.Kill();
         }
         //CheckAndDestroyHouses(leftFoot.GetComponent<TitanFootCollider>().houses);
@@ -285,7 +288,10 @@ public class ColossalTitan : PlayerTitanBase
         base.OnRightFootstep();
         foreach (var creature in rightFoot.GetComponent<TitanFootCollider>().creatures)
         {
-            creature.Kill();
+            if(creature?.isPlayer != null && (bool)creature?.isPlayer)
+                continue;
+            
+            creature?.Kill();
         }
         //CheckAndDestroyHouses(rightFoot.GetComponent<TitanFootCollider>().houses);
         ApplyExplosionForce(15f, rightFoot.transform.position, 10f);
