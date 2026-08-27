@@ -46,8 +46,13 @@ namespace BladeAndTitan.ODMGear
         public bool gasButtonPressed;
         
         public WireDetector wireDetector;
-        bool isOdmAttached => wireDetector.isAttached;
+        bool isOdmAttached => wireDetector.isAttached || alwaysUseODM ;
         GasBooster gasBooster => Player.currentCreature.holders.FirstOrDefault(h => h.name == "LowerBackholderODM")?.items.FirstOrDefault()?.GetComponent<GasBooster>();
+        
+        [ModOption("Always enable ODM", "ODM will work even if wires arent attached.")]
+        public static bool alwaysUseODM = false;
+        
+        
         
 
         AudioSource audioSource;
@@ -151,7 +156,7 @@ namespace BladeAndTitan.ODMGear
             const float pullForce = 20f;
             const float gasDirectionSpeed = 0.1f;
 
-            if (item?.mainHandler == null || !isOdmAttached)
+            if (item?.mainHandler == null || (!isOdmAttached ))
             {
                 if (grapple.Grappling)
                     grapple.UnGrapple();
@@ -167,7 +172,13 @@ namespace BladeAndTitan.ODMGear
                 Vector3 position = Player.local.transform.position;
                 Vector3 force = (hookPoint.transform.position - position).normalized * (Time.deltaTime * pullForce);
                 
-                gasBooster.ReelIn(item.mainHandler.side, force);
+                if(!alwaysUseODM)
+                    gasBooster.ReelIn(item.mainHandler.side, force);
+                else
+                {
+                    Rigidbody rb = Player.local.locomotion.physicBody.rigidBody;
+                    rb.AddForce(force, ForceMode.VelocityChange);
+                }
                 
                 if (Player.local.locomotion.physicBody.rigidBody.useGravity && !gasButtonPressed)
                 {
@@ -185,9 +196,19 @@ namespace BladeAndTitan.ODMGear
             {
                 Vector3 direction = Quaternion.AngleAxis(20f, item.mainHandler.transform.forward) * item.mainHandler.transform.right * -1;
                 direction *= gasDirectionSpeed;
-                if(!gasBooster.UseGas(item.mainHandler.side, direction))
-                    return;
-                
+
+                if (!alwaysUseODM)
+                {
+                    if (!gasBooster.UseGas(item.mainHandler.side, direction))
+                    {
+                        return;
+                    }
+                }
+                else
+                {
+                    Rigidbody rb = Player.local.locomotion.physicBody.rigidBody;
+                    rb.AddForce(direction, ForceMode.VelocityChange);
+                }
                 if(audioSource.isPlaying == false)
                     audioSource.Play();
 
