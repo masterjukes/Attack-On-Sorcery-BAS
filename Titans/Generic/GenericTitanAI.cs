@@ -430,7 +430,7 @@ public class GenericTitanAI : AIBase
                 if(nearestCreature == null)
                     nearestCreature = creature;
                 
-                if(Vector3.Distance(titan.transform.position, creature.transform.position) > Vector3.Distance(titan.transform.position, nearestCreature.transform.position))
+                if(Vector3.Distance(titan.transform.position, creature.transform.position) < Vector3.Distance(titan.transform.position, nearestCreature.transform.position))
                     nearestCreature = creature;
                 
             }
