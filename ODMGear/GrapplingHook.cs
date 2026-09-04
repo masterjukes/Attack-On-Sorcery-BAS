@@ -22,7 +22,7 @@ public class GrapplingRope : MonoBehaviour
     public Transform hookPoint;
     public Transform hookOrigin;
 
-    public float radius = 0.01f;
+    public float radius = 0.003f;
     public int sides = 6;
 
     private float time;

@@ -4,6 +4,7 @@ using System.Linq;
 using BladeAndTitan.DebugHelpers;
 using BladeAndTitan.Titans;
 using BladeAndTitan.Titans.Generic;
+using RootMotion.FinalIK;
 using ThunderRoad;
 using UnityEngine;
 using UnityEngine.AI;

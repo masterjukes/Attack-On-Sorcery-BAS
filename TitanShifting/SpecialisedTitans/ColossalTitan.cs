@@ -1,11 +1,13 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using BladeAndTitan.DestructionPhysics;
 using BladeAndTitan.Titans.Generic;
 using BladeAndTitan.TitanShifting.Abstract;
 using ThunderRoad;
 using UnityEngine;
 using UnityEngine.TerrainTools;
+using Debug = UnityEngine.Debug;
 
 
 namespace BladeAndTitan.TitanShifting.SpecialisedTitans;
@@ -177,8 +179,10 @@ public class ColossalTitan : PlayerTitanBase
     
     public static void ApplyExplosionForce(float radius, Vector3 explosionPosition, float force)
     {
+        
         Collider[] colliders = Physics.OverlapSphere(explosionPosition, radius, ~0, QueryTriggerInteraction.Ignore);
-
+        
+        
         foreach (Collider collider in colliders)
         {
             if (collider.TryGetComponent<Rigidbody>(out Rigidbody rb))
@@ -226,11 +230,32 @@ public class ColossalTitan : PlayerTitanBase
     }
 
 
+    static GameObject[] GetHouses()
+    {
+        var houses = new List<GameObject>();
+        var houseParents = GameObject.Find("New Shiganshina").transform.Find("Houses").GetComponentsInChildren<Transform>();
+        foreach (var gameObject in houseParents)
+        {
+            foreach (var house in gameObject.GetComponentsInChildren<GameObject>())
+            {
+                houses.Add(house);
+            }
+        }
+
+        return houses.ToArray();
+    }
+
+
+
+    
 
     protected override void OnShift()
     {
         base.OnShift();
         ApplyExplosionForce(4, Player.currentCreature.transform.position, 25f);
+        
+        
+
     }
 
     protected override void OnTitanPossess()
@@ -247,8 +272,9 @@ public class ColossalTitan : PlayerTitanBase
 
         leftFoot.GetOrAddComponent<TitanFootCollider>();
         rightFoot.GetOrAddComponent<TitanFootCollider>();
-        
-        
+
+        Player.local.locomotion.capsuleCollider.radius = 0.001f;
+
     }
 
     protected override void OnLeftFootstep()
@@ -314,17 +340,7 @@ public class ColossalTitan : PlayerTitanBase
 
     }
 
-    void CheckAndDestroyHouses(List<GameObject> houses)
-    {
-        foreach (var house in houses)
-        {
-            if (house == null)
-                continue;
-            
-            house.GetOrAddComponent<HouseDestroyer>();
-        }
-        houses.Clear();
-    }
+
 
     public override void Fire(bool active)
     {
@@ -407,6 +423,11 @@ public class ColossalTitan : PlayerTitanBase
                 smokeEffect.Stop();
         }
 
+    }
+
+    protected override void OnUnshift()
+    {
+        base.OnUnshift();
     }
 
 

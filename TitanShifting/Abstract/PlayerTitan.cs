@@ -66,6 +66,13 @@ namespace BladeAndTitan.TitanShifting.Abstract
         protected abstract Quaternion TitanHandLeftRotation { get; }
         protected abstract Quaternion TitanHandRightRotation { get; }
         protected abstract Quaternion TitanHeadRotation { get; }
+        
+        
+        
+        
+        
+        [ModOption("View Player Body.")]
+        public static bool viewPlayerBody = false;
 
 
         public sealed override void Load(SpellCaster spellCaster)
@@ -205,7 +212,9 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
             Scale(height);
             
-            Player.currentCreature.renderers.ForEach(r => r.renderer.enabled = false);
+            if(!viewPlayerBody)
+                Player.currentCreature.renderers.ForEach(r => r.renderer.enabled = false);
+            
             titanObject.transform.SetParent(Player.local.transform, true);
 
             isTransformingIn = false;
@@ -416,10 +425,49 @@ namespace BladeAndTitan.TitanShifting.Abstract
 
             Player.currentCreature.ragdoll.SetColliders(false);
             Player.local.airHelper.minHeight = 1 * Player.local.transform.localScale.x;
+            
+            GameManager.local.StartCoroutine(ReconfigureJoints());
+            
+            
             //Player.local.airHelper.OnAirEvent += creature => GameManager.local.StartCoroutine(ReconfigureJoints());
             
             
         }
+
+        IEnumerator ReconfigureJoints()
+        {
+
+            yield return Yielders.FixedUpdate;
+            
+            var leftHand = Player.local.handLeft;
+            var rightHand = Player.local.handRight;
+            
+            var ragdollHandL = leftHand.ragdollHand;
+            var ragdollHandR = rightHand.ragdollHand;
+            
+            leftHand.link.DetachRagdollPart(ragdollHandL);
+            rightHand.link.DetachRagdollPart(ragdollHandR);
+            
+            leftHand.maximumStretchToSnap = 6f * Player.local.transform.localScale.y;
+            rightHand.maximumStretchToSnap = 6f * Player.local.transform.localScale.y;
+
+            var vrik = Player.local.creature.ragdoll.ik.transform.GetComponent<VRIK>();
+            Debug.Log(vrik.solver.rightLeg.target);
+            Debug.Log(vrik.solver.leftLeg.target);
+            Debug.Log(vrik.solver.rightArm.target);
+            Debug.Log(vrik.solver.leftArm.target);
+            Debug.Log(vrik.solver.spine.pelvisTarget);
+            Debug.Log(vrik.solver.spine.headTarget);
+            
+            ConfigureLocomotion(vrik, Player.local.transform.localScale.y);; 
+            Player.currentCreature.AddJointForceMultiplier("john", Player.local.transform.localScale.y, Player.local.transform.localScale.y * 3f);;
+            
+            yield return Yielders.FixedUpdate;
+            leftHand.link.AttachRagdollPart(ragdollHandL, ragdollHandL.grip);
+            rightHand.link.AttachRagdollPart(ragdollHandR, ragdollHandR.grip);
+        }
+        
+        
         
 
         private void UnScale()
